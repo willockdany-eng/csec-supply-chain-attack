@@ -20,11 +20,11 @@ app.get('/api/session', (_req, res) => {
     title: 'Supply Chain Attacks',
     club: 'CSEC Cybersecurity Club',
     parts: [
-      { id: 'theory', name: 'Theory & Concepts', duration: '30-40 min', slides: 12 },
-      { id: 'cases', name: 'Real-World Case Studies', duration: '15-20 min', count: 5 },
-      { id: 'demos', name: 'Live Demos', duration: '20-30 min', count: 3 },
-      { id: 'labs', name: 'Hands-On Labs', duration: '30-40 min', count: 3 },
-      { id: 'defense', name: 'Defense & Mitigation', duration: '10 min', categories: 6 },
+      { id: 'theory', name: 'Theory & Concepts', slides: 12 },
+      { id: 'cases', name: 'Real-World Case Studies', count: 5 },
+      { id: 'demos', name: 'Live Demos', count: 3 },
+      { id: 'labs', name: 'Hands-On Labs', count: 3 },
+      { id: 'defense', name: 'Defense & Mitigation', categories: 6 },
     ],
   });
 });
@@ -38,7 +38,6 @@ app.get('/api/labs', (_req, res) => {
         url: 'https://tryhackme.com/room/supplychainattacks',
         difficulty: 'Easy',
         cost: 'Free',
-        time: '60 min',
       },
       {
         id: 'ps-cache-ambiguous',
@@ -46,7 +45,6 @@ app.get('/api/labs', (_req, res) => {
         url: 'https://portswigger.net/web-security/host-header/exploiting/lab-host-header-web-cache-poisoning-via-ambiguous-requests',
         difficulty: 'Practitioner',
         cost: 'Free',
-        time: '30 min',
       },
       {
         id: 'ps-cache-dom',
@@ -54,7 +52,6 @@ app.get('/api/labs', (_req, res) => {
         url: 'https://portswigger.net/web-security/web-cache-poisoning/exploiting-design-flaws/lab-web-cache-poisoning-to-exploit-a-dom-vulnerability-via-a-cache-with-strict-cacheability-criteria',
         difficulty: 'Expert',
         cost: 'Free',
-        time: '45 min',
       },
     ],
   });

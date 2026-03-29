@@ -8,7 +8,7 @@ const sections = [
     color: 'cyan',
     title: 'Theory & Concepts',
     desc: 'Interactive slide presentation covering attack taxonomy, MITRE ATT&CK mapping, dependency confusion, typosquatting, CI/CD attacks, and the kill chain.',
-    tag: '12 slides // 30-40 min',
+    tag: '12 slides',
   },
   {
     to: '/cases',
@@ -16,7 +16,7 @@ const sections = [
     color: 'purple',
     title: 'Real-World Case Studies',
     desc: 'Deep dives into SolarWinds, event-stream, Codecov, Lottie Player, and TeamPCP/Trivy with timelines, technical details, and impact analysis.',
-    tag: '5 cases // 15-20 min',
+    tag: '5 cases',
   },
   {
     to: '/labs',
@@ -24,7 +24,7 @@ const sections = [
     color: 'green',
     title: 'Hands-On Labs',
     desc: 'Step-by-step walkthrough guides for TryHackMe Supply Chain Attack: Lottie room and PortSwigger Web Cache Poisoning labs.',
-    tag: '3 labs // 30-40 min',
+    tag: '3 labs',
   },
   {
     to: '/demos',
@@ -32,7 +32,7 @@ const sections = [
     color: 'amber',
     title: 'Live Demos',
     desc: 'Run dependency confusion and malicious postinstall hook simulations live. See how attackers weaponize package managers.',
-    tag: '3 demos // 20-30 min',
+    tag: '3 demos',
   },
   {
     to: '/defense',
@@ -40,7 +40,7 @@ const sections = [
     color: 'red',
     title: 'Defense & Mitigation',
     desc: 'Comprehensive cheat sheet of defensive measures: pinning, SRI, SBOM, CI/CD hardening, incident response playbook, and quick command reference.',
-    tag: 'cheatsheet // 10 min',
+    tag: 'cheatsheet',
   },
 ];
 
