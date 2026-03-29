@@ -48,7 +48,7 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <div className="hero-badge">CSEC Cybersecurity Club // Wednesday Session</div>
+        <div className="hero-badge">CSEC Cybersecurity Club</div>
         <h1>
           <span className="gradient-text">Supply Chain</span><br />Attacks
         </h1>
