@@ -1,0 +1,26 @@
+services:
+  # --- Express API backend ---
+  - type: web
+    name: csec-supplychain-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: ALLOWED_ORIGINS
+        sync: false
+    autoDeploy: true
+
+  # --- FastAPI scripts backend ---
+  - type: web
+    name: csec-scripts-api
+    runtime: python
+    rootDir: scripts-api
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false
+    autoDeploy: true

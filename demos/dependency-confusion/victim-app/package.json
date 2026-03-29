@@ -1,0 +1,9 @@
+{
+  "name": "victim-application",
+  "version": "1.0.0",
+  "description": "A sample application that depends on the internal utils package",
+  "main": "app.js",
+  "dependencies": {
+    "mycompany-internal-utils": "^1.0.0"
+  }
+}
