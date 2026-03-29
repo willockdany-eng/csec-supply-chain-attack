@@ -5,10 +5,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/+$/, ''))
   : ['http://localhost:3000'];
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => {

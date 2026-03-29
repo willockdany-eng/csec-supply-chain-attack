@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiBookOpen, FiTarget, FiTerminal, FiShield, FiFileText, FiMenu, FiX, FiHome } from 'react-icons/fi';
+import { FiBookOpen, FiTarget, FiTerminal, FiShield, FiFileText, FiMenu, FiX, FiHome, FiSun, FiMoon } from 'react-icons/fi';
 
 const links = [
   { to: '/', label: 'Home', icon: <FiHome /> },
@@ -11,10 +11,24 @@ const links = [
   { to: '/defense', label: 'Defense', icon: <FiShield /> },
 ];
 
+function getInitialTheme() {
+  const saved = localStorage.getItem('csec-theme');
+  if (saved) return saved;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
 export default function Navbar() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState(getInitialTheme);
   const navRef = useRef(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('csec-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     setOpen(false);
@@ -57,9 +71,14 @@ export default function Navbar() {
             </li>
           ))}
         </ul>
-        <button className="nav-toggle" aria-label="Toggle menu" onClick={() => setOpen(!open)}>
-          {open ? <FiX /> : <FiMenu />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button className="theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
+            {theme === 'dark' ? <FiSun /> : <FiMoon />}
+          </button>
+          <button className="nav-toggle" aria-label="Toggle menu" onClick={() => setOpen(!open)}>
+            {open ? <FiX /> : <FiMenu />}
+          </button>
+        </div>
       </nav>
     </>
   );

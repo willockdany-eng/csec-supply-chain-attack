@@ -6,11 +6,15 @@ from pydantic import BaseModel
 
 app = FastAPI(title="CSEC Supply Chain Demo Runner")
 
-allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+_env_origins = os.environ.get("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip().rstrip("/") for o in _env_origins.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
