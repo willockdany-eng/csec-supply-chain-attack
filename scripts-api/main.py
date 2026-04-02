@@ -35,6 +35,7 @@ def health():
 def run_demo(req: DemoRequest):
     demo_map = {
         "postinstall": os.path.join(DEMOS_DIR, "malicious-postinstall", "malicious.js"),
+        "token-stealer": os.path.join(DEMOS_DIR, "token-stealer", "malicious-package", "postinstall.js"),
     }
 
     script = demo_map.get(req.demo)

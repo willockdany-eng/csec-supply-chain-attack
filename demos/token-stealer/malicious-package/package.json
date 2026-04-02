@@ -1,0 +1,12 @@
+{
+  "name": "csec-form-helpers",
+  "version": "1.0.0",
+  "description": "Lightweight form validation & sanitization helpers",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "keywords": ["form", "validation", "sanitize", "helpers"],
+  "author": "csec-demo",
+  "license": "MIT"
+}

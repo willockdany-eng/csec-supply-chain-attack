@@ -1,8 +1,10 @@
 node_modules/
 dist/
 .env
+!demos/token-stealer/victim-app/.env
 __pycache__/
 *.pyc
 .vite/
 .DS_Store
 supply-chain-attack-simulator/
+demos/token-stealer/c2-server/stolen-data.log

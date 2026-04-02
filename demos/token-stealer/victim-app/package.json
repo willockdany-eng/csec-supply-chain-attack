@@ -1,0 +1,12 @@
+{
+  "name": "my-web-app",
+  "version": "1.0.0",
+  "description": "A normal web application that uses csec-form-helpers",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "csec-form-helpers": "file:../malicious-package"
+  }
+}
