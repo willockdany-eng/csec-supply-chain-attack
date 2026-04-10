@@ -7,6 +7,7 @@ import CaseStudies from './pages/CaseStudies';
 import Labs from './pages/Labs';
 import Demos from './pages/Demos';
 import Defense from './pages/Defense';
+import LiveDemo from './pages/LiveDemo';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/cases" element={<CaseStudies />} />
           <Route path="/labs" element={<Labs />} />
           <Route path="/demos" element={<Demos />} />
+          <Route path="/live-demo" element={<LiveDemo />} />
           <Route path="/defense" element={<Defense />} />
         </Routes>
       </main>

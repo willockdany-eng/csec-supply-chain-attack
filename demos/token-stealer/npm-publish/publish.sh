@@ -161,5 +161,11 @@ else
   echo -e "  ${D}cd ../c2-server && node server.js${X}"
 fi
 echo ""
+if [ -n "$C2_SECRET" ]; then
+  echo -e "  ${G}[+] Token auth:${X} C2_SECRET is set — only your payload can POST"
+else
+  echo -e "  ${Y}[!] No token:${X} set ${C}C2_SECRET${X} env var to block spam on the C2"
+fi
+echo ""
 echo -e "  ${R}After the session, run: ./unpublish.sh${X}"
 echo ""

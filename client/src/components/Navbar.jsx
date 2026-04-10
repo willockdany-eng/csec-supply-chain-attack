@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiBookOpen, FiTarget, FiTerminal, FiShield, FiFileText, FiMenu, FiX, FiHome, FiSun, FiMoon } from 'react-icons/fi';
+import { FiBookOpen, FiTarget, FiTerminal, FiShield, FiFileText, FiMenu, FiX, FiHome, FiSun, FiMoon, FiPlay } from 'react-icons/fi';
 
 const links = [
   { to: '/', label: 'Home', icon: <FiHome /> },
@@ -8,6 +8,7 @@ const links = [
   { to: '/cases', label: 'Case Studies', icon: <FiFileText /> },
   { to: '/labs', label: 'Labs', icon: <FiTarget /> },
   { to: '/demos', label: 'Demos', icon: <FiTerminal /> },
+  { to: '/live-demo', label: 'Live Demo', icon: <FiPlay /> },
   { to: '/defense', label: 'Defense', icon: <FiShield /> },
 ];
 
