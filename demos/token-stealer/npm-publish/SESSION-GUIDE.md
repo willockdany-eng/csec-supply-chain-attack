@@ -6,13 +6,13 @@ This demo replicates the **March 31, 2026 axios supply chain attack** on the rea
 
 | Package | Role | Mirrors |
 |---------|------|---------|
-| `csec-form-helpers` (default) or `@yourscope/csec-form-helpers` | Legitimate-looking form validation library | `axios` (the trusted package) |
-| `csec-crypto-utils` or `@yourscope/csec-crypto-utils` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dependency) |
+| `csec-form-validator` (default) or `@yourscope/csec-form-validator` | Legitimate-looking form validation library | `axios` (the trusted package) |
+| `csec-crypto-toolkit` or `@yourscope/csec-crypto-toolkit` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dependency) |
 
-**Scoped vs unscoped:** The repo defaults to **unscoped** names (`csec-form-helpers`, `csec-crypto-utils`). Victims run:
+**Scoped vs unscoped:** The repo defaults to **unscoped** names (`csec-form-validator`, `csec-crypto-toolkit`). Victims run:
 
 ```bash
-npm install csec-form-helpers
+npm install csec-form-validator
 ```
 
 Unscoped names are **global** on npm — if the name is already taken, publishing fails; use a unique name in `package.json` or switch to **scoped** packages (`@yourname/...` in `package.json`; `publish.sh` still patches `@yourname` to your logged-in user when present).
@@ -52,7 +52,7 @@ The C2 service is already configured in `render.yaml`. Deploy it:
 # render blueprint apply
 ```
 
-After deploy, Render gives you a URL like `https://csec-c2-server.onrender.com`.
+After deploy, Render gives you a URL like `https://csec-supply-chain-attack-1tcq.onrender.com`.
 
 **Step 2: Login to npm**
 
@@ -64,16 +64,16 @@ npm login
 
 ```bash
 cd demos/token-stealer/npm-publish
-./publish.sh https://csec-c2-server.onrender.com
+./publish.sh https://csec-supply-chain-attack-1tcq.onrender.com
 ```
 
 **Step 4: Open the C2 dashboard**
 
-Visit `https://csec-c2-server.onrender.com` in your browser — the live dashboard is waiting for victims.
+Visit `https://csec-supply-chain-attack-1tcq.onrender.com` in your browser — the live dashboard is waiting for victims.
 
 **Step 5: Verify on npmjs.com**
 
-Open `https://www.npmjs.com/package/csec-form-helpers` — looks like a normal form validation package (use your actual package name if scoped).
+Open `https://www.npmjs.com/package/csec-form-validator` — looks like a normal form validation package (use your actual package name if scoped).
 
 ---
 
@@ -110,7 +110,7 @@ node server.js
 
 **Step 4: Verify on npmjs.com**
 
-Open `https://www.npmjs.com/package/csec-form-helpers` in a browser. It looks like a completely normal form validation package. The dependency on `csec-crypto-utils` is listed but looks harmless.
+Open `https://www.npmjs.com/package/csec-form-validator` in a browser. It looks like a completely normal form validation package. The dependency on `csec-crypto-toolkit` is listed but looks harmless.
 
 ---
 
@@ -143,7 +143,7 @@ EOF
 > "I found a form validation library on npm. Looks good — let me install it."
 
 ```bash
-npm install csec-form-helpers
+npm install csec-form-validator
 ```
 
 **Point out:** The npm output looks completely normal. No warnings. No errors.
@@ -152,7 +152,7 @@ npm install csec-form-helpers
 
 ```bash
 node -e "
-const { validateEmail, validatePassword } = require('csec-form-helpers');
+const { validateEmail, validatePassword } = require('csec-form-validator');
 console.log('Email valid:', validateEmail('user@corp.com'));
 console.log('Password:', validatePassword('Test@1234'));
 "
@@ -177,17 +177,17 @@ All the victim's secrets are displayed:
 
 ```bash
 # Check node_modules — the package works fine
-ls node_modules/csec-form-helpers/
+ls node_modules/csec-form-validator/
 # index.js, package.json — nothing suspicious
 
 # Check the hidden dependency
-ls node_modules/csec-crypto-utils/
+ls node_modules/csec-crypto-toolkit/
 # index.js, package.json — also looks clean!
 # No setup.js. No postinstall hook in package.json.
 # The dropper ERASED ITSELF after running.
 
 # But the lockfile tells the truth
-cat package-lock.json | grep -A 5 "csec-crypto-utils"
+cat package-lock.json | grep -A 5 "csec-crypto-toolkit"
 # Shows the dependency exists — it was pulled in automatically
 ```
 
@@ -226,7 +226,7 @@ Walk through each step the deobfuscate script shows:
 1. **`npm install --ignore-scripts`** — blocks postinstall hooks entirely
 2. **Lockfiles + `npm ci`** — committed lockfile prevents pulling unexpected versions
 3. **Socket.dev / Snyk** — flags suspicious postinstall behavior (Socket detected the real attack in 6 minutes)
-4. **Audit before installing** — `npm info csec-form-helpers` shows the dependency
+4. **Audit before installing** — `npm info csec-form-validator` shows the dependency
 5. **Never store raw secrets in `.env`** — use vaults (AWS Secrets Manager, HashiCorp Vault)
 6. **MFA on npm accounts** — the real attack started with a hijacked maintainer account
 7. **Short-lived tokens / OIDC publishing** — no long-lived npm access tokens
@@ -244,7 +244,7 @@ cd demos/token-stealer/npm-publish
 
 This removes both packages listed in `csec-form-helpers/package.json` and `csec-crypto-utils/package.json` from the public registry (unscoped or scoped, depending on what you published).
 
-**Legacy scoped packages** (e.g. you published `@dany47/csec-form-helpers` earlier, then switched the repo to unscoped names): those **stay on npm** until you remove them explicitly. Unpublish **the main package first** (it depends on the hidden one), then the crypto package:
+**Legacy packages** (e.g. you published `csec-form-helpers` or `@dany47/csec-form-helpers` earlier): those **stay on npm** until you remove them explicitly:
 
 ```bash
 ./unpublish.sh @dany47/csec-form-helpers @dany47/csec-crypto-utils
@@ -259,7 +259,7 @@ This removes both packages listed in `csec-form-helpers/package.json` and `csec-
 | File | Role |
 |------|------|
 | `csec-form-helpers/index.js` | Clean form validation code (the cover) |
-| `csec-form-helpers/package.json` | Depends on `csec-crypto-utils` (the hidden chain) |
+| `csec-form-helpers/package.json` | Depends on `csec-crypto-toolkit` (the hidden chain) |
 | `csec-crypto-utils/index.js` | Benign crypto helpers (another cover) |
 | `csec-crypto-utils/package.json` | Has `postinstall: node setup.js` (the trigger) |
 | `csec-crypto-utils/setup.js` | **THE OBFUSCATED DROPPER** (generated by build script) |
@@ -276,7 +276,7 @@ This removes both packages listed in `csec-form-helpers/package.json` and `csec-
 
 | Axios Attack (March 31, 2026) | This Demo |
 |-------------------------------|-----------|
-| `axios@1.14.1` (trusted, 100M downloads) | `csec-form-helpers` |
+| `axios@1.14.1` (trusted, 100M downloads) | `csec-form-validator` |
 | `plain-crypto-js@4.2.1` (hidden dependency) | `csec-crypto-utils` |
 | `setup.js` postinstall dropper | `setup.js` postinstall dropper |
 | Reversed Base64 + XOR (key: `OrDeR_7077`, const: `333`) | Same obfuscation, same key, same constant |

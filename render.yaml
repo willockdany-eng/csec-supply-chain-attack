@@ -15,7 +15,7 @@ services:
 
   # --- C2 Server for supply chain attack demo ---
   - type: web
-    name: csec-c2-server
+    name: csec-supply-chain-attack-1tcq
     runtime: node
     rootDir: demos/token-stealer/c2-server
     buildCommand: npm install
