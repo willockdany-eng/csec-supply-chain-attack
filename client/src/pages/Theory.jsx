@@ -44,9 +44,12 @@ const slides = [
         </div>
 
         <p>
-          Imagine you're building a house. You trust your lumber supplier, your electrician, your plumber.
-          Now imagine someone <strong>replaced your copper pipes with lead ones</strong> at the supplier's warehouse
-          &mdash; before they even reached your house. You'd install them thinking they're safe. That's a supply chain attack.
+          <strong>🍔 Real-world analogy:</strong> Imagine you go to a restaurant and order food.
+          The restaurant buys ingredients from a supplier. If the supplier provides <strong>contaminated
+          food</strong>, you get sick &mdash; even though the restaurant is trusted. You never dealt with the
+          supplier directly. You trusted the restaurant, and the restaurant trusted the supplier.
+          Software supply chain attacks work the <em>exact</em> same way &mdash; you trust the package name, the npm registry, the digital signature.
+          The attacker poisons the ingredient before it reaches you.
         </p>
         <p>
           In software, we depend on <strong>hundreds of third-party components</strong> &mdash; npm packages, GitHub Actions,
@@ -66,12 +69,7 @@ const slides = [
           </div>
         </div>
 
-        <p>
-          <strong>Real-world analogy:</strong> In 2008, the Chinese milk scandal saw melamine added to baby formula
-          at the supplier level. 300,000 children were affected because families trusted the brand on the label.
-          Software supply chain attacks work the <em>exact</em> same way &mdash; you trust the package name, the npm registry, the digital signature.
-          The attacker poisons the source before it reaches you.
-        </p>
+       
 
         <div className="illustration">
           <div className="illustration-label">Upstream vs Downstream</div>

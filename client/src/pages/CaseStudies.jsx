@@ -252,6 +252,75 @@ const cases = [
   },
   {
     year: 'March 2026',
+    title: 'Axios npm Hijack',
+    type: 'Compromised Maintainer Account // T1195.001',
+    impact: [
+      { value: '100M+', label: 'Weekly Downloads' },
+      { value: '~3 hrs', label: 'Window' },
+      { value: 'RAT', label: 'Cross-Platform' },
+      { value: 'DPRK', label: 'Attribution' },
+    ],
+    details: (
+      <>
+        <h4>The Story</h4>
+        <p>
+          On March 31, 2026, the most popular JavaScript HTTP client &mdash; <strong>axios</strong>, with over
+          <strong> 100 million weekly downloads</strong> &mdash; was compromised via a hijacked maintainer account.
+          The attacker, attributed by Microsoft to <strong>Sapphire Sleet</strong> (a North Korean state actor),
+          targeted lead maintainer <strong>Jason Saayman</strong> through a social engineering campaign that
+          delivered RAT malware to his PC, giving them access to his npm credentials.
+        </p>
+        <p>
+          Using a stolen long-lived npm access token, the attacker published two malicious versions:
+          <code> axios@1.14.1</code> and <code>axios@0.30.4</code>. They did <strong>not</strong> modify any
+          Axios source code. Instead, they injected a single new dependency: <code>plain-crypto-js@4.2.1</code>.
+          A "clean" version (<code>4.2.0</code>) had been published 18 hours earlier to give the package a
+          brief history on the registry.
+        </p>
+
+        <h4>The Dropper: Double-Obfuscated &amp; Self-Erasing</h4>
+        <ul>
+          <li>When <code>npm install</code> ran, <code>plain-crypto-js@4.2.1</code>&apos;s <strong>postinstall</strong> hook executed <code>setup.js</code></li>
+          <li>The dropper used <strong>two layers of obfuscation</strong>: reversed Base64 with padding substitution + XOR cipher (key: <code>OrDeR_7077</code>, constant: <code>333</code>)</li>
+          <li>It detected the host OS via <code>os.platform()</code> and fetched a platform-specific payload from C2 at <code>sfrclak[.]com:8000</code> (IP: <code>142.11.206.73</code>)</li>
+          <li>After execution, the malware <strong>deleted itself</strong>: removed <code>setup.js</code>, removed the <code>package.json</code> with the postinstall hook, and replaced it with a clean copy. Forensic inspection of <code>node_modules/plain-crypto-js</code> would show no trace.</li>
+        </ul>
+
+        <h4>Platform-Specific RATs</h4>
+        <ul>
+          <li><strong>macOS:</strong> AppleScript dropped a binary to <code>/Library/Caches/com.apple.act.mond</code> (spoofing an Apple daemon). Generated a 16-char victim ID, fingerprinted the system, beaconed every 60s with a fake IE8/WinXP User-Agent. Accepted commands: <code>peinject</code> (inject binary with ad-hoc codesign), <code>runscript</code> (shell/AppleScript), <code>rundir</code> (enumerate /Applications &amp; ~/Library), <code>kill</code></li>
+          <li><strong>Windows:</strong> VBScript copied PowerShell to <code>%PROGRAMDATA%\wt.exe</code> (masquerading as Windows Terminal) and launched a hidden RAT with execution policy bypass</li>
+          <li><strong>Linux:</strong> Python RAT downloaded to <code>/tmp/ld.py</code> and launched as an orphaned background process via <code>nohup python3</code></li>
+        </ul>
+
+        <h4>Timeline</h4>
+        <ul>
+          <li><strong>~2 weeks before:</strong> Social engineering campaign against maintainer begins</li>
+          <li><strong>Mar 30, 05:57 UTC:</strong> <code>plain-crypto-js@4.2.0</code> published (clean version, establishing history)</li>
+          <li><strong>Mar 31, 00:21 UTC:</strong> <code>axios@1.14.1</code> published with malicious dependency</li>
+          <li><strong>Mar 31, ~01:00 UTC:</strong> <code>axios@0.30.4</code> published; community reports issues &mdash; <strong>attacker deletes them</strong> using the hijacked account</li>
+          <li><strong>Mar 31, 01:38 UTC:</strong> Axios collaborator DigitalBrainJS opens PR to deprecate, flags the deleted issues, contacts npm directly</li>
+          <li><strong>Mar 31, 03:15 UTC:</strong> Malicious versions removed from npm</li>
+          <li><strong>Mar 31, 03:29 UTC:</strong> <code>plain-crypto-js</code> removed from npm</li>
+        </ul>
+
+        <h4>Attack Flow</h4>
+        <div className="illustration" style={{ margin: '0.75rem 0' }}>
+          <div className="illustration-content">
+            <FlowDiagram steps={[
+              { label: 'Sapphire Sleet', desc: 'Social-engineers maintainer', type: 'attacker', arrowType: 'danger' },
+              { label: 'npm Account', desc: 'Stolen token publishes v1.14.1', type: 'compromised', arrowType: 'danger' },
+              { label: 'plain-crypto-js', desc: 'postinstall drops RAT', type: 'compromised', arrowType: 'danger' },
+              { label: 'Dev Machines', desc: 'macOS/Win/Linux compromised', type: 'victim' },
+            ]} />
+          </div>
+        </div>
+      </>
+    ),
+    lesson: 'Even the most trusted packages can be weaponized through maintainer account compromise. Lockfiles are your first defense — if yours was committed before March 31 and you didn\'t run a fresh install, you were safe. Use npm ci (not npm install) in CI/CD, enforce MFA on npm accounts, and consider --ignore-scripts for untrusted installs.',
+  },
+  {
+    year: 'March 2026',
     title: 'TeamPCP / Trivy Action',
     type: 'CI/CD + Cascading Supply Chain // T1195.001 + T1195.002',
     impact: [

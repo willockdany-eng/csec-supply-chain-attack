@@ -13,6 +13,15 @@ services:
         sync: false
     autoDeploy: true
 
+  # --- C2 Server for supply chain attack demo ---
+  - type: web
+    name: csec-c2-server
+    runtime: node
+    rootDir: demos/token-stealer/c2-server
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: false
+
   # --- FastAPI scripts backend ---
   - type: web
     name: csec-scripts-api

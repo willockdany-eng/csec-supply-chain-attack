@@ -16,7 +16,7 @@ const sections = [
     color: 'purple',
     title: 'Real-World Case Studies',
     desc: 'Deep dives into SolarWinds, event-stream, Codecov, Lottie Player, and TeamPCP/Trivy with timelines, technical details, and impact analysis.',
-    tag: '5 cases',
+    tag: '5 cases ',
   },
   {
     to: '/labs',
@@ -24,7 +24,7 @@ const sections = [
     color: 'green',
     title: 'Hands-On Labs',
     desc: 'Step-by-step walkthrough guides for TryHackMe Supply Chain Attack: Lottie room and PortSwigger Web Cache Poisoning labs.',
-    tag: '3 labs',
+    tag: '3 labs ',
   },
   {
     to: '/demos',
@@ -32,7 +32,7 @@ const sections = [
     color: 'amber',
     title: 'Live Demos',
     desc: 'Run dependency confusion and malicious postinstall hook simulations live. See how attackers weaponize package managers.',
-    tag: '3 demos',
+    tag: '3 demos ',
   },
   {
     to: '/defense',
@@ -40,7 +40,7 @@ const sections = [
     color: 'red',
     title: 'Defense & Mitigation',
     desc: 'Comprehensive cheat sheet of defensive measures: pinning, SRI, SBOM, CI/CD hardening, incident response playbook, and quick command reference.',
-    tag: 'cheatsheet',
+    tag: 'cheatsheet ',
   },
 ];
 
@@ -48,7 +48,8 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <div className="hero-badge">CSEC Cybersecurity Club</div>
+        <div className="hero-badge">CSEC Cybersecurity Club..</div>
+        
         <h1>
           <span className="gradient-text">Supply Chain</span><br />Attacks
         </h1>
