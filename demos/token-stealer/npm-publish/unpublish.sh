@@ -3,6 +3,10 @@ set -e
 
 R='\033[31m' G='\033[32m' Y='\033[33m' C='\033[36m' B='\033[1m' D='\033[2m' X='\033[0m'
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FORM_DIR="$SCRIPT_DIR/csec-form-helpers"
+CRYPTO_DIR="$SCRIPT_DIR/csec-crypto-utils"
+
 echo ""
 echo -e "${Y}${B}  ╔═══════════════════════════════════════════════════════════╗${X}"
 echo -e "${Y}${B}  ║     UNPUBLISH — Remove packages from npm                 ║${X}"
@@ -15,21 +19,33 @@ if [ -z "$NPM_USER" ]; then
   exit 1
 fi
 
-SCOPE="@${NPM_USER}"
-FORM_PKG="${SCOPE}/csec-form-helpers"
-CRYPTO_PKG="${SCOPE}/csec-crypto-utils"
+unpublish_one() {
+  local pkg="$1"
+  echo -e "  ${Y}[*]${X} Unpublishing ${pkg}..."
+  set +e
+  npm unpublish "$pkg" --force 2>&1
+  ec=$?
+  set -e
+  if [ "$ec" -eq 0 ]; then
+    echo -e "  ${G}[✓]${X} Removed ${pkg}"
+  else
+    echo -e "  ${D}  (failed or already removed — check npmjs.com)${X}"
+  fi
+  echo ""
+}
 
-echo -e "  ${Y}[*]${X} Unpublishing ${FORM_PKG}..."
-npm unpublish "$FORM_PKG" --force 2>&1 && \
-  echo -e "  ${G}[✓]${X} Removed ${FORM_PKG}" || \
-  echo -e "  ${D}  (may already be removed)${X}"
-echo ""
+if [ "$#" -gt 0 ]; then
+  echo -e "  ${D}Using package names from arguments (e.g. legacy @scope/...).${X}"
+  echo ""
+  for pkg in "$@"; do
+    unpublish_one "$pkg"
+  done
+else
+  FORM_PKG=$(node -e "console.log(require('$FORM_DIR/package.json').name)")
+  CRYPTO_PKG=$(node -e "console.log(require('$CRYPTO_DIR/package.json').name)")
+  unpublish_one "$FORM_PKG"
+  unpublish_one "$CRYPTO_PKG"
+fi
 
-echo -e "  ${Y}[*]${X} Unpublishing ${CRYPTO_PKG}..."
-npm unpublish "$CRYPTO_PKG" --force 2>&1 && \
-  echo -e "  ${G}[✓]${X} Removed ${CRYPTO_PKG}" || \
-  echo -e "  ${D}  (may already be removed)${X}"
-echo ""
-
-echo -e "${G}${B}  [✓] Cleanup complete. Both packages removed from npm.${X}"
+echo -e "${G}${B}  [✓] Done. Verify on npmjs.com if needed.${X}"
 echo ""

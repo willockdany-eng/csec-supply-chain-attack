@@ -1,5 +1,5 @@
 {
-  "name": "@yourname/csec-crypto-utils",
+  "name": "csec-crypto-toolkit",
   "version": "4.2.1",
   "description": "Lightweight cryptographic utility helpers for Node.js applications",
   "main": "index.js",

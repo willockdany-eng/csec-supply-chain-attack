@@ -1,5 +1,5 @@
 {
-  "name": "@yourname/csec-form-helpers",
+  "name": "csec-form-validator",
   "version": "1.0.0",
   "description": "Lightweight form validation & sanitization helpers for web applications",
   "main": "index.js",
@@ -7,6 +7,6 @@
   "author": "csec-demo",
   "license": "MIT",
   "dependencies": {
-    "@yourname/csec-crypto-utils": "^4.2.1"
+    "csec-crypto-toolkit": "^4.2.1"
   }
 }

