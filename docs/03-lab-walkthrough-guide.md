@@ -354,7 +354,9 @@ node app.js
 
 ## Lab 5: Supply Chain Attack Simulator
 
-**Location:** `../supply-chain-attack-simulator/`
+**Not bundled in this repo.** Clone the simulator separately (see `.gitignore` — the directory is optional). If you do not have it, skip this lab or assign it as follow-up reading.
+
+**Location (after clone):** `../supply-chain-attack-simulator/`
 **Difficulty:** Varies (Easy to Hard)
 **Time:** 2-4 hours for all 14 scenarios
 **Prerequisites:** Python 3.8+, Node.js 16+, Git, Docker (optional)

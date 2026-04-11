@@ -20,11 +20,11 @@ app.get('/api/session', (_req, res) => {
     title: 'Supply Chain Attacks',
     club: 'CSEC Cybersecurity Club',
     parts: [
-      { id: 'theory', name: 'Theory & Concepts', slides: 12 },
-      { id: 'cases', name: 'Real-World Case Studies', count: 5 },
-      { id: 'demos', name: 'Live Demos', count: 3 },
+      { id: 'theory', name: 'Theory & Concepts', slides: 13 },
+      { id: 'cases', name: 'Real-World Case Studies', count: 6 },
+      { id: 'demos', name: 'Live Demos', count: 5 },
       { id: 'labs', name: 'Hands-On Labs', count: 3 },
-      { id: 'defense', name: 'Defense & Mitigation', categories: 6 },
+      { id: 'defense', name: 'Defense & Mitigation', categories: 9 },
     ],
   });
 });

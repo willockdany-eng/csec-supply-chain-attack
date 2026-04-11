@@ -10,6 +10,13 @@ A full MERN stack + FastAPI interactive presentation website with a cyber-themed
 ### Quick Start
 
 ```bash
+# One command (backend + scripts API + frontend)
+chmod +x start.sh && ./start.sh
+```
+
+Or three terminals:
+
+```bash
 # Terminal 1: React Frontend (port 3000)
 cd client && npm run dev
 
@@ -35,11 +42,12 @@ Open **http://localhost:3000** in your browser.
 | Route | Content |
 |-------|---------|
 | `/` | Home -- CSEC branded landing page with session overview |
-| `/theory` | 12-slide interactive presentation (arrow keys to navigate) |
-| `/cases` | 5 real-world case studies with expandable timeline |
+| `/theory` | 13-slide interactive presentation (arrow keys to navigate) |
+| `/cases` | 6 real-world case studies with expandable timeline |
 | `/labs` | Step-by-step walkthrough guides for TryHackMe + PortSwigger |
-| `/demos` | Live demo runner (malicious postinstall, dependency confusion) |
-| `/defense` | Defense cheat sheet with 6 categories + code examples |
+| `/demos` | 5 live demos (postinstall, dependency confusion, token stealer, axios hijack, typosquatting) |
+| `/live-demo` | Facilitator checklist for npm-hosted token-stealer demo (if used) |
+| `/defense` | Defense cheat sheet with 9 categories + code examples |
 
 ## Workspace Structure
 
@@ -48,7 +56,7 @@ supplychain/
 ├── client/                            # React frontend (Vite)
 │   └── src/
 │       ├── components/                # Navbar, Footer, SlidePresenter, CodeBlock
-│       └── pages/                     # Home, Theory, CaseStudies, Labs, Demos, Defense
+│       └── pages/                     # Home, Theory, CaseStudies, Labs, Demos, LiveDemo, Defense
 ├── server/                            # Express.js backend API
 ├── scripts-api/                       # FastAPI demo script runner
 ├── docs/                              # Markdown reference documents
@@ -56,19 +64,35 @@ supplychain/
 │   ├── 02-case-studies.md
 │   ├── 03-lab-walkthrough-guide.md
 │   └── 04-defense-cheatsheet.md
-├── demos/                             # Practical demo files
-│   ├── dependency-confusion/          # Full dependency confusion setup
-│   └── malicious-postinstall/         # Postinstall hook demo
-└── supply-chain-attack-simulator/     # 14-scenario attack simulator (cloned)
+└── demos/                             # Practical demo files
+    ├── dependency-confusion/          # Full dependency confusion setup
+    ├── malicious-postinstall/         # Postinstall hook demo
+    └── token-stealer/                 # C2, visual-demo, victim-app, live-session, npm-publish
 ```
 
-## Session Flow (90-120 min)
+**Optional (not in this repository):** `supply-chain-attack-simulator/` — a separate clone referenced in [docs/03-lab-walkthrough-guide.md](docs/03-lab-walkthrough-guide.md) Lab 5. It is gitignored until you add it locally.
 
-1. **Theory & Concepts** (30-40 min) -- `/theory` route, 12 interactive slides
-2. **Case Studies** (15-20 min) -- `/cases` route, 5 expandable case studies
-3. **Live Demos** (20-30 min) -- `/demos` route, run postinstall demo live
-4. **Hands-On Labs** (30-40 min) -- `/labs` route, TryHackMe + PortSwigger
-5. **Defense Wrap-Up** (10 min) -- `/defense` route, mitigation cheat sheet
+Token stealer demos: canonical facilitator paths are documented in [demos/token-stealer/README.md](demos/token-stealer/README.md).
+
+## Session Flow (90–120 min)
+
+**Tight run (~95 min):** intro 5–8 min, theory 28–35 min, cases 12–18 min (2–3 cases, not all six), live demos 22–30 min, labs overview or homework 10–15 min, defense 8–12 min.
+
+**90 minutes only:** shorten theory (~22 min, skip optional video slide), cases (~10 min, two cases), labs to “homework + 3 min overview”, demos 20–25 min.
+
+**120 minutes:** add 10–15 min Q&A after theory, optional 5 min break, 15–20 min for TryHackMe start (AttackBox) or extended dependency-confusion walkthrough.
+
+| Block | Time | Route / material |
+|-------|------|------------------|
+| Intro + ethics | 5–8 min | `/` |
+| Theory | 28–35 min | `/theory` (13 slides) |
+| Case studies | 12–18 min | `/cases` |
+| Live demos | 22–30 min | `/demos` + [demos/](demos/) |
+| Live npm demo (optional) | 5–10 min | `/live-demo` |
+| Labs | 10–15 min or homework | `/labs`, [docs/03-lab-walkthrough-guide.md](docs/03-lab-walkthrough-guide.md) |
+| Defense | 8–12 min | `/defense` |
+
+Do not run the full TryHackMe Lottie room (~60 min) inside the session block; assign it or demo a short local lab instead.
 
 ## Lab Links
 

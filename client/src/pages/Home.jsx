@@ -8,15 +8,15 @@ const sections = [
     color: 'cyan',
     title: 'Theory & Concepts',
     desc: 'Interactive slide presentation covering attack taxonomy, MITRE ATT&CK mapping, dependency confusion, typosquatting, CI/CD attacks, and the kill chain.',
-    tag: '12 slides',
+    tag: '13 slides',
   },
   {
     to: '/cases',
     icon: <FiFileText />,
     color: 'purple',
     title: 'Real-World Case Studies',
-    desc: 'Deep dives into SolarWinds, event-stream, Codecov, Lottie Player, and TeamPCP/Trivy with timelines, technical details, and impact analysis.',
-    tag: '5 cases ',
+    desc: 'Deep dives into SolarWinds, event-stream, Codecov, Lottie Player, Axios, and TeamPCP/Trivy with timelines, technical details, and impact analysis.',
+    tag: '6 cases ',
   },
   {
     to: '/labs',
@@ -31,8 +31,8 @@ const sections = [
     icon: <FiTerminal />,
     color: 'amber',
     title: 'Live Demos',
-    desc: 'Run dependency confusion and malicious postinstall hook simulations live. See how attackers weaponize package managers.',
-    tag: '3 demos ',
+    desc: 'Run dependency confusion, malicious postinstall, token stealer, axios hijack, and typosquatting simulations live. See how attackers weaponize package managers.',
+    tag: '5 demos ',
   },
   {
     to: '/defense',
@@ -71,7 +71,7 @@ export default function Home() {
             <span className="stat-label">Attack Types</span>
           </div>
           <div className="hero-stat">
-            <span className="stat-value">5</span>
+            <span className="stat-value">6</span>
             <span className="stat-label">Case Studies</span>
           </div>
           <div className="hero-stat">
@@ -79,7 +79,7 @@ export default function Home() {
             <span className="stat-label">Hands-On Labs</span>
           </div>
           <div className="hero-stat">
-            <span className="stat-value">3</span>
+            <span className="stat-value">5</span>
             <span className="stat-label">Live Demos</span>
           </div>
         </div>
