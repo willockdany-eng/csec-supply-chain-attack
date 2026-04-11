@@ -225,17 +225,20 @@ const slides = [
     content: (
       <>
         <p>
-          In February 2021, security researcher <strong>Alex Birsan</strong> published a paper that shook the entire industry.
-          He discovered he could get code execution inside <strong>Apple, Microsoft, PayPal, Shopify, Netflix, Tesla, and Uber</strong>
-          &mdash; all by exploiting how package managers resolve dependencies. He earned <strong>$130,000+ in bug bounties</strong> from
-          this single technique. Here's how it works:
+          Modern software projects rely on package managers (npm, pip, Maven) that pull dependencies from
+          <strong> registries</strong>. Companies often run <strong>two registries</strong>: a <em>private</em> one
+          for internal packages (e.g., <code>mycompany-auth-utils</code>) and the <em>public</em> one (npmjs.com).
+          The critical question is: <strong>what happens when the same package name exists on both?</strong>
         </p>
 
         <p>
-          Many companies use <strong>private internal packages</strong> with names like <code>company-auth-utils</code> or
-          <code> mycompany-config</code>. These live on a private registry. The problem? If you publish a package with the
-          <strong> same name but a higher version number</strong> on the <em>public</em> npm registry, the package manager often
-          picks the public one because it has a higher version number. That's the "confusion."
+          Here&apos;s the flaw: most package managers resolve by <strong>highest version number</strong> across all
+          configured registries. So if an attacker publishes <code>mycompany-auth-utils@99.0.0</code> on the
+          public npm registry, and the company&apos;s private registry has <code>mycompany-auth-utils@1.2.3</code>,
+          the package manager picks <strong>v99.0.0 &mdash; the attacker&apos;s version</strong>. The developer
+          runs <code>npm install</code>, gets the malicious package, and any lifecycle hooks (<code>preinstall</code>,
+          <code> postinstall</code>) execute automatically. That&apos;s the &ldquo;confusion&rdquo; &mdash; the
+          package manager is confused about which registry is authoritative.
         </p>
 
         <div className="illustration">
@@ -250,10 +253,27 @@ const slides = [
           </div>
         </div>
 
+        <p><strong>Why it works:</strong></p>
+        <ul>
+          <li><strong>Naming is global:</strong> There&apos;s no reservation system &mdash; anyone can publish any unscoped package name on public npm.</li>
+          <li><strong>Version wins:</strong> Package managers default to the highest available version that satisfies the range (<code>^1.0.0</code> allows <em>any</em> version {'>'}= 1.0.0, including 99.0.0).</li>
+          <li><strong>Lifecycle hooks are automatic:</strong> <code>preinstall</code> / <code>postinstall</code> scripts run without any user prompt.</li>
+          <li><strong>Internal names leak easily:</strong> They appear in JavaScript source maps, error messages, leaked <code>package.json</code> files, and GitHub repos.</li>
+        </ul>
+
+        <p>
+          <strong>Real-world proof &mdash; Alex Birsan (February 2021):</strong> Security researcher Alex Birsan
+          used this exact technique to get code execution inside <strong>Apple, Microsoft, PayPal, Shopify,
+          Netflix, Tesla, and Uber</strong>. He found internal package names in leaked files, published the same names
+          on public npm with version <code>99.0.0</code> containing a harmless DNS callback, and waited. When
+          developers at these companies ran <code>npm install</code>, his code ran on their build servers. He
+          earned <strong>$130,000+ in bug bounties</strong> from this single technique.
+        </p>
+
         <div className="slide-grid">
           <div className="slide-grid-item">
             <h4>Step 1: Recon</h4>
-            <p><strong>How Birsan did it:</strong> He found internal package names in leaked <code>package.json</code> files, JavaScript source maps on public websites, and error messages that referenced private modules. Companies accidentally leak these names all the time.</p>
+            <p>Birsan found internal package names in leaked <code>package.json</code> files, JavaScript source maps on public websites, and error messages that referenced private modules. Companies accidentally leak these names all the time.</p>
           </div>
           <div className="slide-grid-item">
             <h4>Step 2: Publish</h4>
@@ -265,11 +285,11 @@ const slides = [
           </div>
           <div className="slide-grid-item">
             <h4>Step 4: Execution</h4>
-            <p>The <code>postinstall</code> hook ran <strong>automatically</strong> during install &mdash; no user interaction needed. Birsan got DNS callbacks from Apple's internal build servers, Microsoft's Azure DevOps, and PayPal's CI/CD pipelines.</p>
+            <p>The <code>postinstall</code> hook ran <strong>automatically</strong> during install &mdash; no user interaction needed. Birsan got DNS callbacks from Apple&apos;s internal build servers, Microsoft&apos;s Azure DevOps, and PayPal&apos;s CI/CD pipelines.</p>
           </div>
         </div>
 
-        <p><strong>What a real attacker's postinstall hook looks like:</strong></p>
+        <p><strong>What a real attacker&apos;s postinstall hook looks like:</strong></p>
         <CodeBlock
           language="javascript"
           filename="malicious postinstall.js"
@@ -294,7 +314,7 @@ https.request({
         />
 
         <div className="slide-quote">
-          Birsan's takeaway: &ldquo;Squatting valid internal package names was a nearly sure-fire method to get into
+          Birsan&apos;s takeaway: &ldquo;Squatting valid internal package names was a nearly sure-fire method to get into
           the networks of some of the biggest tech companies out there, getting remote code execution, and
           possibly allowing attackers to add backdoors during builds.&rdquo;
         </div>
