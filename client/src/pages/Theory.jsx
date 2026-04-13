@@ -424,60 +424,59 @@ https.request({
     content: (
       <>
         <p>
-          Here's something most developers don't think about: your CI/CD pipeline is the
-          <strong> most privileged environment</strong> in your entire infrastructure. Think about
-          what a GitHub Actions runner has access to: <code>GITHUB_TOKEN</code> with write permissions,
-          AWS credentials, npm publish tokens, database passwords, Docker registry credentials &mdash;
-          <strong>everything you need to deploy to production</strong>. If an attacker gets code execution
-          in your CI/CD, it's game over.
+          Think of CI/CD (GitHub Actions, Jenkins, etc.) as <strong>the robot that builds and deploys
+          your app</strong>. To do its job, it needs <em>all the keys</em>: your npm token, AWS
+          credentials, database passwords. That makes it the <strong>single most powerful thing</strong> in
+          your project. If an attacker tricks the robot into running <em>their</em> code, they get every
+          secret it has access to.
         </p>
 
         <div className="illustration">
-          <div className="illustration-label">CI/CD attack chain</div>
+          <div className="illustration-label">How a CI/CD attack works — step by step</div>
           <div className="illustration-content">
             <FlowDiagram steps={[
-              { label: 'Attacker', desc: 'Steals PAT / compromises action', type: 'attacker', arrowType: 'danger' },
-              { label: 'GitHub Action', desc: 'Tag moved to malicious commit', type: 'compromised', arrowType: 'danger' },
-              { label: 'CI/CD Runner', desc: 'Runs with secrets access', type: 'victim', arrowType: 'danger' },
-              { label: 'C2 Server', desc: 'Receives stolen tokens', type: 'attacker' },
+              { label: '1. Steal a key', desc: "Get a maintainer's login token", type: 'attacker', arrowType: 'danger' },
+              { label: '2. Swap the code', desc: 'Move git tag to evil commit', type: 'compromised', arrowType: 'danger' },
+              { label: '3. CI runs it', desc: 'Robot executes evil code', type: 'victim', arrowType: 'danger' },
+              { label: '4. Secrets leak', desc: 'Tokens sent to attacker', type: 'attacker' },
             ]} />
           </div>
         </div>
 
         <p>
-          <strong>The tj-actions incident (March 2025):</strong> <code>tj-actions/changed-files</code> was used
-          by <strong>23,000+ repositories</strong>. Attackers stole a maintainer's Personal Access Token and
-          rewrote the action's git tags to point to a malicious commit. Every repo using <code>@v35</code>
-          (instead of a pinned SHA) suddenly ran the attacker's code. The payload dumped <em>all</em> CI/CD
-          secrets to the workflow log, where the attacker scraped them. Those stolen tokens were then used
-          to compromise <em>more</em> actions &mdash; a cascading supply chain attack.
+          <strong>Real incident — tj-actions (March 2025):</strong> A popular GitHub Action called
+          <code>tj-actions/changed-files</code> was used by <strong>23,000+ projects</strong>.
+          Attackers stole the maintainer's password-like token (PAT), then <em>moved</em> the
+          version tag <code>@v35</code> to point at malicious code. Every project that
+          used <code>@v35</code> now unknowingly ran the attacker's code in their CI &mdash; and it
+          printed out every secret. The attacker then used <em>those</em> stolen secrets to compromise
+          even more Actions. One breach turned into many.
         </p>
 
         <p>
-          <strong>It got worse with Trivy (March 2026):</strong> Using tokens stolen from the tj-actions
-          breach, attackers compromised <code>aquasecurity/trivy-action</code> &mdash; a <strong>security
-          scanner</strong>. The irony is painful: the tool organizations trusted to <em>find</em>
-          vulnerabilities <em>was</em> the vulnerability. 75 of 76 version tags were poisoned.
-          10,000+ CI/CD workflows leaked credentials. Stolen npm tokens were used to deploy
-          <strong> CanisterWorm</strong> malware with blockchain-based C2 that <em>cannot</em> be taken
-          down via domain seizure.
+          <strong>It happened again — Trivy (March 2026):</strong> Using secrets stolen from tj-actions,
+          attackers poisoned <code>aquasecurity/trivy-action</code> &mdash; a <strong>security
+          scanner</strong> (the irony: the tool meant to <em>find</em> vulnerabilities became one).
+          <strong>10,000+</strong> CI pipelines leaked credentials. Those stolen npm tokens were then used
+          to publish malware that used blockchain for its command server, making it nearly impossible to shut down.
         </p>
 
         <CodeBlock
           language="yaml"
-          filename=".github/workflows/ci.yml — VULNERABLE"
-          code={`# This is what most people write:
-- uses: tj-actions/changed-files@v35  # TAG — attacker can move this!
+          filename=".github/workflows/ci.yml — VULNERABLE vs SAFE"
+          code={`# VULNERABLE — tag is just a label, attacker can move it:
+- uses: tj-actions/changed-files@v35
 
-# This is what you SHOULD write:
-- uses: tj-actions/changed-files@abc123def456  # SHA — immutable`}
+# SAFE — SHA is a unique fingerprint, nobody can change it:
+- uses: tj-actions/changed-files@abc123def456`}
         />
 
         <p>
-          <strong>Key lesson as presenter:</strong> Ask your audience — "Who here pins GitHub Actions to SHA hashes?"
-          Almost nobody does. That's the problem. A git tag like <code>@v4</code> is a pointer &mdash; anyone with
-          write access can move it to a different commit. A SHA is immutable. That one change would have prevented
-          both the tj-actions and Trivy attacks.
+          <strong>The one-line fix:</strong> Pin Actions to a <strong>SHA hash</strong> instead of a
+          version tag. A tag like <code>@v4</code> is just a sticky note &mdash; anyone with access can
+          peel it off and stick it on different code. A SHA like <code>@abc123...</code> is a
+          fingerprint &mdash; it always points to the exact same code, forever. If everyone had done this,
+          both attacks would have failed.
         </p>
       </>
     ),
@@ -487,52 +486,181 @@ https.request({
     title: '<span class="highlight">Build Process</span> Compromise',
     content: (
       <>
+        <div className="slide-quote">
+          &ldquo;You write an essay, proofread it carefully, and hand it to the printer.
+          The printer <strong>secretly changes a paragraph</strong>, prints 18,000 copies,
+          then puts the original back. Nobody ever sees the change &mdash;
+          except every reader.&rdquo;
+        </div>
+
         <p>
-          This is the <strong>most sophisticated</strong> category of supply chain attacks. The source code
-          is clean. Code review passes. Unit tests pass. The repository looks perfect. But the
-          <strong> compiled binary contains a backdoor</strong>. How? The attacker compromises
-          the <em>build system</em> &mdash; the server that compiles the code. Malicious code is injected
-          <strong> during compilation</strong> and removed afterward. You'd never find it by reading the source.
+          That&apos;s a build process compromise in one sentence. The source code is clean,
+          code review finds nothing, tests pass &mdash; but the <strong>compiled program
+          has a backdoor</strong> injected during the build step. This is widely considered
+          the <strong>hardest supply chain attack to detect</strong>.
         </p>
 
         <div className="illustration">
-          <div className="illustration-label">SolarWinds build compromise flow</div>
+          <div className="illustration-label">The concept at a glance</div>
           <div className="illustration-content">
             <FlowDiagram steps={[
-              { label: 'Clean Source', desc: 'Passes code review', type: '' },
-              { label: 'SUNSPOT', desc: 'Swaps file at compile time', type: 'attacker', arrowType: 'danger' },
-              { label: 'Compiler', desc: 'Builds trojanized binary', type: 'compromised', arrowType: 'danger' },
-              { label: 'Signed Update', desc: 'Legitimately signed!', type: 'victim' },
+              { label: 'Clean Repo', desc: 'No malicious code anywhere', type: '' },
+              { label: 'Build Server', desc: 'Secretly tampered with', type: 'attacker', arrowType: 'danger' },
+              { label: 'Compiled Binary', desc: 'Backdoor baked in', type: 'compromised', arrowType: 'danger' },
+              { label: 'Signed Update', desc: 'Looks 100% legitimate', type: 'victim' },
+            ]} />
+          </div>
+        </div>
+
+        <div className="slide-grid">
+          <div className="slide-grid-item">
+            <h4>Who</h4>
+            <p><strong>APT29 / Cozy Bear</strong> &mdash; Russian intelligence (SVR). One of the most sophisticated state-sponsored groups in the world.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Target</h4>
+            <p><strong>SolarWinds Orion</strong> &mdash; a network monitoring platform used by <strong>300,000 customers</strong>, including most Fortune 500 companies and US government agencies.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>The Key Insight</h4>
+            <p>They didn&apos;t touch the source code &mdash; code review would catch that. They poisoned the <strong>build server</strong>, so the compiled output had a backdoor the source never showed.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Patience</h4>
+            <p>The attackers spent <strong>months</strong> inside SolarWinds&apos; network doing recon before ever touching the build system. They studied how builds worked first.</p>
+          </div>
+        </div>
+
+        <div className="slide-quote">
+          This is the attack that put &ldquo;supply chain&rdquo; on every CISO&apos;s radar.
+        </div>
+      </>
+    ),
+  },
+  {
+    tag: 'Part 1 // SUNSPOT — How It Worked',
+    title: 'SUNSPOT: The <span class="highlight">4-Step Trick</span>',
+    content: (
+      <>
+        <p>
+          <strong>SUNSPOT</strong> was the implant APT29 planted on SolarWinds&apos; build server.
+          It didn&apos;t run all the time &mdash; it <em>waited</em> for the exact moment Orion
+          was being compiled, did its work in seconds, then covered its tracks. Here&apos;s
+          the step-by-step:
+        </p>
+
+        <div className="slide-grid">
+          <div className="slide-grid-item">
+            <h4>Step 1: Watch</h4>
+            <p>SUNSPOT quietly monitored for <code>MsBuild.exe</code> processes on the build server. The moment Orion started compiling, it woke up.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Step 2: Swap</h4>
+            <p>It replaced <strong>a single source file</strong> with a backdoored version containing the SUNBURST payload. Just one file out of thousands &mdash; that&apos;s all it took.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Step 3: Compile</h4>
+            <p>The build server compiled Orion normally &mdash; including the swapped file. The backdoor was now <strong>baked into the DLL</strong>.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Step 4: Restore</h4>
+            <p>After compilation finished, SUNSPOT <strong>put the original file back</strong>. Developers checking the repo saw nothing. No diff. No trace. No evidence.</p>
+          </div>
+        </div>
+
+        <div className="illustration">
+          <div className="illustration-label">SUNSPOT&apos;s operation — the &ldquo;evil printer&rdquo;</div>
+          <div className="illustration-content">
+            <FlowDiagram steps={[
+              { label: '1. WATCH', desc: 'Monitors for MsBuild.exe', type: 'attacker', arrowType: 'danger' },
+              { label: '2. SWAP', desc: 'Replaces source file mid-compile', type: 'compromised', arrowType: 'danger' },
+              { label: '3. BUILD', desc: 'Backdoor compiled into DLL', type: 'compromised', arrowType: 'danger' },
+              { label: '4. RESTORE', desc: 'Original file put back — no trace', type: 'attacker' },
             ]} />
           </div>
         </div>
 
         <p>
-          <strong>SolarWinds &mdash; the definitive case study (2020):</strong> Russian intelligence (APT29/Cozy Bear)
-          infiltrated SolarWinds' build server and planted a tool called <strong>SUNSPOT</strong>. Here's exactly what
-          it did, step by step:
-        </p>
-        <ul>
-          <li><strong>SUNSPOT</strong> ran as a service on the build server, monitoring for <code>MsBuild.exe</code> processes</li>
-          <li>When it detected Orion being compiled, it <strong>swapped a source file</strong> (<code>SolarWinds.Orion.Core.BusinessLayer.dll</code>) with a backdoored version</li>
-          <li>After compilation finished, it <strong>restored the original file</strong> &mdash; so the next developer who checked the repo saw clean code</li>
-          <li>The resulting DLL was <strong>signed with SolarWinds' legitimate certificate</strong> &mdash; so customers had no reason to distrust it</li>
-          <li>The backdoor (<strong>SUNBURST</strong>) waited <strong>12-14 days</strong> before activating, to avoid detection during testing</li>
-          <li>It used <strong>Domain Generation Algorithm (DGA)</strong> for C2 communication, making the DNS traffic look like normal SolarWinds API calls</li>
-          <li>It checked for security tools (Wireshark, Fiddler, etc.) and <strong>disabled itself</strong> if it detected analysis environments</li>
-          <li><strong>18,000 organizations</strong> installed the trojanized update. About 100 were selectively exploited, including the US Treasury, Department of Homeland Security, and Microsoft.</li>
-        </ul>
-
-        <p>
-          <strong>How it was discovered:</strong> FireEye (now Mandiant) noticed unauthorized access to their
-          Red Team tools. Investigating their own breach, they traced it back to the SolarWinds update. Without
-          FireEye being a victim themselves, this could have continued for years.
+          The result: a trojanized DLL, <strong>legitimately signed by SolarWinds&apos; own
+          code-signing certificate</strong>. No developer ever saw malicious code in the repo.
+          The backdoor existed <em>only</em> in the compiled binary that shipped to 18,000 customers.
         </p>
 
         <div className="slide-quote">
-          This is the nightmare scenario: your source code is perfect, your tests pass, your code review is clean,
-          but the binary your users install has a backdoor &mdash; and it's <em>signed by your own certificate</em>.
-          There's no amount of code review that catches this.
+          Why not just modify the repo? Because code review would catch it. SUNSPOT was
+          brilliant precisely because it <strong>only existed during the brief window
+          of compilation</strong> &mdash; then erased its tracks completely.
+        </div>
+      </>
+    ),
+  },
+  {
+    tag: 'Part 1 // SUNBURST — Staying Hidden',
+    title: 'SUNBURST: How It <span class="highlight">Stayed Hidden</span> for 9 Months',
+    content: (
+      <>
+        <p>
+          Getting the backdoor into the binary was only half the job. The payload
+          (<strong>SUNBURST</strong>) also had to <strong>avoid detection</strong> once installed
+          on thousands of networks. It used four techniques:
+        </p>
+
+        <div className="slide-grid">
+          <div className="slide-grid-item">
+            <h4>2-Week Sleep</h4>
+            <p>After installation, it <strong>did nothing for 12&ndash;14 days</strong>. Testing and QA never saw malicious behavior &mdash; it only woke up in production.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Disguised Traffic</h4>
+            <p>Command-and-control calls were <strong>disguised as normal Orion API traffic</strong>. To a network analyst, it looked like routine SolarWinds telemetry.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Anti-Analysis</h4>
+            <p>It <strong>checked for security tools</strong> (Wireshark, Fiddler, debuggers) and <em>shut itself off</em> if it detected anyone watching.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Signed &amp; Trusted</h4>
+            <p>The DLL was signed with <strong>SolarWinds&apos; real certificate</strong>. Every antivirus, firewall, and allowlist treated it as legitimate software.</p>
+          </div>
+        </div>
+
+        <div className="illustration">
+          <div className="illustration-label">Why every defense layer failed</div>
+          <div className="illustration-content">
+            <FlowDiagram steps={[
+              { label: 'Code Review', desc: 'Repo was clean', type: '' },
+              { label: 'Tests', desc: 'All passed', type: '' },
+              { label: 'Antivirus', desc: 'Signed = trusted', type: '' },
+              { label: 'Firewall', desc: 'Traffic looked normal', type: '' },
+              { label: 'RESULT', desc: 'Undetected for 9 months', type: 'attacker' },
+            ]} />
+          </div>
+        </div>
+
+        <div className="slide-grid">
+          <div className="slide-grid-item">
+            <h4>18,000+</h4>
+            <p>Organizations installed the trojanized update &mdash; including the <strong>US Treasury</strong>, <strong>Homeland Security</strong>, the Pentagon, and <strong>Microsoft</strong>.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>~100 Exploited</h4>
+            <p>Around 100 high-value targets were <strong>hand-picked for deeper espionage</strong>. The rest served as cover &mdash; hiding in the noise of a massive install base.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>9 Months</h4>
+            <p>The backdoor operated from <strong>March to December 2020</strong>. Nine months of access to the US government before anyone noticed.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>Caught by Accident</h4>
+            <p>FireEye (now Mandiant) noticed someone stole <em>their</em> red-team tools. Investigating their own breach, they traced it to a SolarWinds update. <strong>Without this accident, it could have lasted years.</strong></p>
+          </div>
+        </div>
+
+        <div className="slide-quote">
+          The nightmare scenario: your source code is perfect, your tests pass, your code review
+          is clean &mdash; but the program your users install has a backdoor, signed with <em>your
+          own certificate</em>. No developer ever saw malicious code in the repo. No amount
+          of reading the source would catch this.
         </div>
       </>
     ),

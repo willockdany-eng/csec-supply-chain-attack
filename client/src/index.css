@@ -660,6 +660,7 @@ code {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 1.25rem;
+  transition: all var(--transition);
 }
 
 .slide-grid-item h4 {
@@ -1332,6 +1333,7 @@ code {
   padding: 1.25rem 1rem;
   text-align: center;
   position: relative;
+  transition: all var(--transition);
   transition: all var(--transition);
 }
 

