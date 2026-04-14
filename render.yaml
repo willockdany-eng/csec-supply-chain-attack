@@ -20,6 +20,9 @@ services:
     rootDir: demos/token-stealer/c2-server
     buildCommand: npm install
     startCommand: node server.js
+    envVars:
+      - key: DASH_PASS
+        sync: false
     autoDeploy: false
 
   # --- FastAPI scripts backend ---

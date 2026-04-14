@@ -8,3 +8,4 @@ __pycache__/
 .DS_Store
 supply-chain-attack-simulator/
 demos/token-stealer/c2-server/stolen-data.log
+.github

