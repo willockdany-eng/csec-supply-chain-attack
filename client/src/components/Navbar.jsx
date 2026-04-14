@@ -56,7 +56,7 @@ export default function Navbar() {
       {open && <div className="nav-overlay" onClick={() => setOpen(false)} />}
       <nav className="navbar" ref={navRef}>
         <Link to="/" className="navbar-brand">
-          <span className="brand-icon">CS</span>
+          <img src="/logo.png" alt="CSEC" className="brand-logo" />
           <span>CSEC <span className="brand-accent">// Supply Chain</span></span>
         </Link>
         <ul className={`navbar-links${open ? ' open' : ''}`}>
