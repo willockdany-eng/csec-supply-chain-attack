@@ -1686,6 +1686,35 @@ code {
   font-weight: 700;
 }
 
+.ld-c2-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.8rem;
+  margin-bottom: 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bg-primary);
+  background: linear-gradient(135deg, var(--accent-red), #ff1a53);
+  border: none;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 0 20px rgba(255, 51, 102, 0.25);
+}
+
+.ld-c2-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(255, 51, 102, 0.45);
+  filter: brightness(1.1);
+}
+
+.ld-c2-btn:active {
+  transform: translateY(0);
+}
+
 .ld-phases {
   display: flex;
   flex-direction: column;

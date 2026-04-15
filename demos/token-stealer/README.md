@@ -20,10 +20,10 @@ The developer runs their app. Everything works. They have **no idea** their `.en
 
 ## Architecture
 
-The C2 server is deployed on Render with a Neon PostgreSQL database. Victims don't need to be on the same network as the attacker — exfiltrated data is sent to the cloud.
+The C2 server is deployed at [csec-supply-chain-attack.vercel.app](https://csec-supply-chain-attack.vercel.app/) with a Neon PostgreSQL database. Victims don't need to be on the same network — exfiltrated data is sent to the cloud.
 
 ```
-Victim machine                         Cloud (Render)
+Victim machine                         Cloud (Vercel)
 ┌────────────────────┐     POST /e     ┌──────────────────┐
 │ npm install         │ ──────────────► │ C2 Server        │
 │ csec-form-helpers   │                 │ (server.js)      │
@@ -43,7 +43,7 @@ Victim machine                         Cloud (Render)
 
 ### 1. Open the C2 Dashboard
 
-The C2 server is already deployed. Open the dashboard in your browser and log in.
+Open [https://csec-supply-chain-attack.vercel.app/](https://csec-supply-chain-attack.vercel.app/) and log in.
 
 ### 2. Be the Victim (any machine)
 
@@ -69,7 +69,9 @@ node -e "const f = require('csec-form-helpers'); console.log('Email valid:', f.v
 
 ### 3. The Reveal
 
-Switch to the C2 dashboard. Every secret from the `.env` file is displayed, along with hostname, IP, MAC, SSH keys, and cloud credentials.
+Switch to the [C2 dashboard](https://csec-supply-chain-attack.vercel.app/). Every secret from the `.env` file is displayed, along with hostname, IP, MAC, SSH keys, and cloud credentials.
+
+For the full presentation script with narration, forensic investigation, reverse engineering, and defense discussion, see [npm-publish/SESSION-GUIDE.md](npm-publish/SESSION-GUIDE.md).
 
 ---
 
@@ -77,7 +79,7 @@ Switch to the C2 dashboard. Every secret from the `.env` file is displayed, alon
 
 | Directory | Role |
 |-----------|------|
-| `c2-server/` | Attacker's C2 server + dashboard (deployed on Render) |
+| `c2-server/` | Attacker's C2 server + dashboard ([deployed](https://csec-supply-chain-attack.vercel.app/)) |
 | `c2-server/db.js` | Neon PostgreSQL persistence layer |
 | `malicious-package/` | The malicious npm package (readable, educational version) |
 | `malicious-package/postinstall.js` | **THE PAYLOAD** — parses .env, reads sensitive files, exfiltrates silently |

