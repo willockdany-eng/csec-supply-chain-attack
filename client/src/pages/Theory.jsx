@@ -43,6 +43,23 @@ const slides = [
           &ldquo;You don't hack the castle &mdash; you <strong>poison the food supply</strong> going into the castle.&rdquo;
         </div>
 
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p>
+              A <strong>supply chain attack</strong> is a type of cyberattack where hackers don&apos;t target the main
+              victim directly &mdash; instead, they compromise a <strong>trusted third-party</strong> (like software vendors,
+              libraries, or service providers) to reach many victims at once.
+            </p>
+            <p>
+              <strong>🔍 Simple Idea:</strong> Instead of breaking into your system directly, attackers
+              &rarr; <strong>Hack something you trust</strong>, then &rarr; <strong>Use it to infect you</strong>.
+            </p>
+          </div>
+          <div className="definition-image">
+            <img src="/supply-chain-attack.png" alt="Supply chain attack diagram" />
+          </div>
+        </div>
+
         <p>
           <strong>🍔 Real-world analogy:</strong> Imagine you go to a restaurant and order food.
           The restaurant buys ingredients from a supplier. If the supplier provides <strong>contaminated
