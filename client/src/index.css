@@ -1433,6 +1433,7 @@ code {
 .taxonomy-cat:nth-child(3) { border-top-color: var(--accent-purple); }
 .taxonomy-cat:nth-child(4) { border-top-color: var(--accent-amber); }
 .taxonomy-cat:nth-child(5) { border-top-color: var(--accent-red); }
+.taxonomy-cat:nth-child(6) { border-top-color: #ff6b9d; }
 
 .taxonomy-cat:hover {
   transform: translateY(-4px);
@@ -1464,6 +1465,51 @@ code {
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
+
+.taxonomy-enhanced .taxonomy-cat {
+  padding: 1.5rem 1.25rem 1.25rem;
+  position: relative;
+}
+
+.taxonomy-icon {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.taxonomy-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.taxonomy-enhanced .taxonomy-cat ul li {
+  font-size: 0.8rem;
+  padding: 5px 0 5px 1rem;
+  line-height: 1.45;
+}
+
+.taxonomy-enhanced .taxonomy-cat ul li strong {
+  color: var(--text-primary);
+}
+
+.taxonomy-example {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  opacity: 0.8;
+}
+
+.taxonomy-cat:nth-child(2) .taxonomy-example { color: var(--accent-green); }
+.taxonomy-cat:nth-child(3) .taxonomy-example { color: var(--accent-purple); }
+.taxonomy-cat:nth-child(4) .taxonomy-example { color: var(--accent-amber); }
+.taxonomy-cat:nth-child(5) .taxonomy-example { color: var(--accent-red); }
+.taxonomy-cat:nth-child(6) .taxonomy-example { color: var(--accent-red); }
 
 /* ============ VIDEO & MEDIA ============ */
 

@@ -142,67 +142,129 @@ const slides = [
     tag: 'Part 1 // Taxonomy',
     title: 'Attack Surface <span class="highlight">Taxonomy</span>',
     content: (
-      <div className="taxonomy">
-        <div className="taxonomy-cat">
-          <h4>Source Code</h4>
-          <ul>
-            <li>Compromised repository</li>
-            <li>Malicious commits</li>
-            <li>Git submodule attacks</li>
-          </ul>
+      <>
+        <div className="slide-quote">
+          Think of software delivery as a river flowing from developer to user. Attackers can
+          <strong> poison the water</strong> at six different points along the way.
         </div>
-        <div className="taxonomy-cat">
-          <h4>Dependencies</h4>
-          <ul>
-            <li>Dependency confusion</li>
-            <li>Typosquatting</li>
-            <li>Malicious updates</li>
-            <li>Transitive dep attacks</li>
-          </ul>
+
+        <div className="illustration">
+          <div className="illustration-label">The six attack surfaces — from code to user</div>
+          <div className="illustration-content">
+            <FlowDiagram steps={[
+              { label: 'Source Code', desc: 'Where code is written', type: 'attacker', arrowType: 'danger' },
+              { label: 'Dependencies', desc: 'What code relies on', type: 'compromised', arrowType: 'danger' },
+              { label: 'Build System', desc: 'How code is compiled', type: 'compromised', arrowType: 'danger' },
+              { label: 'Distribution', desc: 'How code is delivered', type: 'victim', arrowType: 'danger' },
+              { label: 'Browser', desc: 'Where code runs', type: 'victim', arrowType: 'danger' },
+              { label: 'Client-Side', desc: 'What users interact with', type: 'attacker' },
+            ]} />
+          </div>
         </div>
-        <div className="taxonomy-cat">
-          <h4>Build System</h4>
-          <ul>
-            <li>CI/CD pipeline compromise</li>
-            <li>Build tool compromise</li>
-            <li>Package signing bypass</li>
-          </ul>
+
+        <div className="taxonomy taxonomy-enhanced">
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#128187;</div>
+            <h4>Source Code</h4>
+            <p className="taxonomy-desc">Attackers infiltrate the repository itself</p>
+            <ul>
+              <li><strong>Compromised repo</strong> &mdash; steal maintainer credentials</li>
+              <li><strong>Malicious commits</strong> &mdash; sneak code past review</li>
+              <li><strong>Submodule attacks</strong> &mdash; redirect git references</li>
+            </ul>
+            <div className="taxonomy-example">e.g. PHP backdoor attempt (2021)</div>
+          </div>
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#128230;</div>
+            <h4>Dependencies</h4>
+            <p className="taxonomy-desc">Poison the packages your app relies on</p>
+            <ul>
+              <li><strong>Dependency confusion</strong> &mdash; public name hijacks private</li>
+              <li><strong>Typosquatting</strong> &mdash; <code>lodahs</code> instead of <code>lodash</code></li>
+              <li><strong>Malicious updates</strong> &mdash; trusted package turns hostile</li>
+              <li><strong>Transitive deps</strong> &mdash; attack a dependency&apos;s dependency</li>
+            </ul>
+            <div className="taxonomy-example">e.g. event-stream, crossenv, Birsan</div>
+          </div>
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#9881;&#65039;</div>
+            <h4>Build System</h4>
+            <p className="taxonomy-desc">Tamper with the factory that produces your software</p>
+            <ul>
+              <li><strong>CI/CD compromise</strong> &mdash; inject code via pipelines</li>
+              <li><strong>Build tool poisoning</strong> &mdash; modify compiler/bundler</li>
+              <li><strong>Signing bypass</strong> &mdash; forge or steal certificates</li>
+            </ul>
+            <div className="taxonomy-example">e.g. SolarWinds SUNSPOT, tj-actions</div>
+          </div>
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#128666;</div>
+            <h4>Distribution</h4>
+            <p className="taxonomy-desc">Intercept software on its way to the user</p>
+            <ul>
+              <li><strong>Update servers</strong> &mdash; replace files on official servers</li>
+              <li><strong>Registry mirrors</strong> &mdash; serve altered packages</li>
+              <li><strong>Cache poisoning</strong> &mdash; corrupt CDN/proxy caches</li>
+            </ul>
+            <div className="taxonomy-example">e.g. Codecov bash uploader (2021)</div>
+          </div>
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#127760;</div>
+            <h4>Browser / Runtime</h4>
+            <p className="taxonomy-desc">Weaponize the environment that executes code</p>
+            <ul>
+              <li><strong>Malicious JS libs</strong> &mdash; hijack popular CDN scripts</li>
+              <li><strong>Browser extensions</strong> &mdash; extensions with hidden payloads</li>
+              <li><strong>Compromised CDNs</strong> &mdash; serve altered files globally</li>
+            </ul>
+            <div className="taxonomy-example">e.g. polyfill.io domain takeover (2024)</div>
+          </div>
+          <div className="taxonomy-cat">
+            <div className="taxonomy-icon">&#128179;</div>
+            <h4>Client-Side</h4>
+            <p className="taxonomy-desc">Attack what the end-user sees and touches</p>
+            <ul>
+              <li><strong>Magecart</strong> &mdash; skim credit cards from checkout pages</li>
+              <li><strong>Watering hole</strong> &mdash; compromise sites targets visit</li>
+              <li><strong>Cryptojacking</strong> &mdash; mine crypto in users&apos; browsers</li>
+            </ul>
+            <div className="taxonomy-example">e.g. British Airways (380K cards stolen)</div>
+          </div>
         </div>
-        <div className="taxonomy-cat">
-          <h4>Distribution</h4>
-          <ul>
-            <li>Compromised update servers</li>
-            <li>Registry mirror poisoning</li>
-            <li>Web cache poisoning</li>
-          </ul>
-        </div>
-        <div className="taxonomy-cat">
-          <h4>Browser / Runtime</h4>
-          <ul>
-            <li>Malicious JS libraries</li>
-            <li>Browser extensions</li>
-            <li>Compromised CDNs</li>
-          </ul>
-        </div>
-        <div className="taxonomy-cat">
-          <h4>Client-Side</h4>
-          <ul>
-            <li>Magecart / Formjacking</li>
-            <li>Watering hole attacks</li>
-            <li>Cryptojacking scripts</li>
-          </ul>
-        </div>
-      </div>
+      </>
     ),
   },
+ 
+  
+
   {
     tag: 'Part 1 // MITRE ATT&CK',
     title: '<span class="highlight">MITRE ATT&CK</span> T1195',
     content: (
       <>
-        <p>
-          Supply Chain Compromise falls under the <strong>Initial Access</strong> tactic in the MITRE ATT&CK framework.
-        </p>
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p>
+              <strong>MITRE ATT&CK</strong> (Adversarial Tactics, Techniques &amp; Common Knowledge) is a
+              globally recognized <strong>knowledge base of real-world attacker behavior</strong>. It catalogs
+              <em>how</em> adversaries break in, move around, and steal data &mdash; organized into
+              <strong> tactics</strong> (the goal) and <strong>techniques</strong> (the method). Security teams
+              use it to map threats, test defenses, and speak a common language about attacks.
+            </p>
+            <p>
+              Supply Chain Compromise is cataloged as <strong>T1195</strong> under the
+              <strong> Initial Access</strong> tactic &mdash; meaning it&apos;s one of the ways attackers
+              get their <em>first foothold</em> into a target network.
+            </p>
+          </div>
+          <div className="definition-image">
+            <img
+              src="https://www.attackiq.com/wp-content/uploads/2022/05/mitre-attack-1.png"
+              alt="MITRE ATT&CK framework matrix"
+            />
+          </div>
+        </div>
+
         <table className="slide-table">
           <thead>
             <tr>
@@ -214,7 +276,7 @@ const slides = [
           <tbody>
             <tr>
               <td><code>T1195.001</code></td>
-              <td>Dependencies & Dev Tools</td>
+              <td>Dependencies &amp; Dev Tools</td>
               <td>Manipulating packages, libraries, or development tools</td>
             </tr>
             <tr>
@@ -237,34 +299,79 @@ const slides = [
     ),
   },
   {
+    tag: 'Part 1 // Attack Types',
+    title: 'Common <span class="highlight">Attack Types</span>',
+    content: (
+      <>
+        <p>
+          Now that we&apos;ve mapped <em>where</em> attacks happen across the supply chain, let&apos;s
+          look at the specific <strong>techniques attackers use</strong> &mdash; each one illustrated
+          with real-world incidents.
+        </p>
+
+        <div className="slide-grid">
+          <div className="slide-grid-item">
+            <h4>A &mdash; Dependency Confusion</h4>
+            <p>Public package name hijacks a private one via higher version number. Birsan earned <strong>$130K+</strong> from Apple, Microsoft, PayPal.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>B &mdash; Typosquatting</h4>
+            <p>Register misspelled package names and wait for typos. <code>crossenv</code> stole credentials from <strong>700+ devs</strong>.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>C &mdash; Compromised Packages</h4>
+            <p>Take over a trusted package and push a malicious update. <code>event-stream</code> was weaponized to steal Bitcoin.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>D &mdash; CI/CD Pipeline Attacks</h4>
+            <p>Compromise the build robot that holds all the secrets. <code>tj-actions</code> leaked secrets from <strong>23,000+ repos</strong>.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>E &mdash; Build Process Compromise</h4>
+            <p>Inject a backdoor during compilation &mdash; source stays clean. SolarWinds shipped a trojanized DLL to <strong>18,000 orgs</strong>.</p>
+          </div>
+          <div className="slide-grid-item">
+            <h4>F &mdash; Browser-Based Attacks</h4>
+            <p>Compromise CDN scripts, extensions, or checkout pages. British Airways lost <strong>380K credit cards</strong> in 15 days.</p>
+          </div>
+        </div>
+
+        <div className="slide-quote">
+          We&apos;ll now walk through each one in detail &mdash; how it works, why it succeeds, and what real damage it caused.
+        </div>
+      </>
+    ),
+  },
+  {
     tag: 'Part 1 // Attack Type A',
     title: '<span class="highlight">Dependency Confusion</span>',
     content: (
       <>
-        <p>
-          Modern software projects rely on package managers (npm, pip, Maven) that pull dependencies from
-          <strong> registries</strong>. Companies often run <strong>two registries</strong>: a <em>private</em> one
-          for internal packages (e.g., <code>mycompany-auth-utils</code>) and the <em>public</em> one (npmjs.com).
-          The critical question is: <strong>what happens when the same package name exists on both?</strong>
-        </p>
-
-        <p>
-          Here&apos;s the flaw: most package managers resolve by <strong>highest version number</strong> across all
-          configured registries. So if an attacker publishes <code>mycompany-auth-utils@99.0.0</code> on the
-          public npm registry, and the company&apos;s private registry has <code>mycompany-auth-utils@1.2.3</code>,
-          the package manager picks <strong>v99.0.0 &mdash; the attacker&apos;s version</strong>. The developer
-          runs <code>npm install</code>, gets the malicious package, and any lifecycle hooks (<code>preinstall</code>,
-          <code> postinstall</code>) execute automatically. That&apos;s the &ldquo;confusion&rdquo; &mdash; the
-          package manager is confused about which registry is authoritative.
-        </p>
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p><strong>What is it?</strong></p>
+            <ul>
+              <li>Companies use <strong>private registries</strong> for internal packages (e.g., <code>csec-auth-utils@1.2.3</code>)</li>
+              <li>Attacker publishes the <strong>same name</strong> on public npm with a higher version (<code>@99.0.0</code>)</li>
+              <li>Package manager picks <strong>highest version</strong> &rarr; installs the attacker&apos;s package</li>
+              <li><code>postinstall</code> hooks run <strong>automatically</strong> &mdash; instant code execution</li>
+            </ul>
+          </div>
+          <div className="definition-image">
+            <img
+              src="https://cdn.activestate.com/wp-content/uploads/2022/12/DependencyConfusion-QR.png"
+              alt="Dependency Confusion diagram"
+            />
+          </div>
+        </div>
 
         <div className="illustration">
           <div className="illustration-label">How version resolution is exploited</div>
           <div className="illustration-content">
             <FlowDiagram steps={[
-              { label: 'Private Registry', desc: 'my-utils@1.2.3', type: '' },
+              { label: 'Private Registry', desc: 'csec-auth-utils@1.2.3', type: '' },
               { label: 'npm install', desc: 'resolves highest version', type: 'compromised', arrowType: '' },
-              { label: 'Public Registry', desc: 'my-utils@99.0.0', type: 'attacker', arrowType: 'danger' },
+              { label: 'Public Registry', desc: 'csec-auth-utils@99.0.0', type: 'attacker', arrowType: 'danger' },
               { label: 'Victim Machine', desc: 'Installs v99.0.0!', type: 'victim' },
             ]} />
           </div>
@@ -272,41 +379,21 @@ const slides = [
 
         <p><strong>Why it works:</strong></p>
         <ul>
-          <li><strong>Naming is global:</strong> There&apos;s no reservation system &mdash; anyone can publish any unscoped package name on public npm.</li>
-          <li><strong>Version wins:</strong> Package managers default to the highest available version that satisfies the range (<code>^1.0.0</code> allows <em>any</em> version {'>'}= 1.0.0, including 99.0.0).</li>
-          <li><strong>Lifecycle hooks are automatic:</strong> <code>preinstall</code> / <code>postinstall</code> scripts run without any user prompt.</li>
-          <li><strong>Internal names leak easily:</strong> They appear in JavaScript source maps, error messages, leaked <code>package.json</code> files, and GitHub repos.</li>
+          <li><strong>Naming is global</strong> &mdash; anyone can publish any unscoped name on public npm</li>
+          <li><strong>Highest version wins</strong> &mdash; <code>^1.0.0</code> allows up to <code>99.0.0</code></li>
+          <li><strong>Lifecycle hooks are automatic</strong> &mdash; <code>postinstall</code> runs with zero user prompt</li>
+          <li><strong>Internal names leak easily</strong> &mdash; source maps, error logs, leaked <code>package.json</code></li>
         </ul>
 
-        <p>
-          <strong>Real-world proof &mdash; Alex Birsan (February 2021):</strong> Security researcher Alex Birsan
-          used this exact technique to get code execution inside <strong>Apple, Microsoft, PayPal, Shopify,
-          Netflix, Tesla, and Uber</strong>. He found internal package names in leaked files, published the same names
-          on public npm with version <code>99.0.0</code> containing a harmless DNS callback, and waited. When
-          developers at these companies ran <code>npm install</code>, his code ran on their build servers. He
-          earned <strong>$130,000+ in bug bounties</strong> from this single technique.
-        </p>
+        <p><strong>Real-world &mdash; Alex Birsan (Feb 2021):</strong></p>
+        <ul>
+          <li><strong>Step 1:</strong> Found internal package names in leaked files &amp; source maps</li>
+          <li><strong>Step 2:</strong> Published same names on public npm as <code>v99.0.0</code> with a DNS callback</li>
+          <li><strong>Step 3:</strong> Devs ran <code>npm install</code> &rarr; npm picked the higher public version</li>
+          <li><strong>Step 4:</strong> <code>postinstall</code> ran automatically on build servers at <strong>Apple, Microsoft, PayPal, Tesla, Uber</strong></li>
+          <li><strong>Result:</strong> <strong>$130,000+</strong> in bug bounties from a single technique</li>
+        </ul>
 
-        <div className="slide-grid">
-          <div className="slide-grid-item">
-            <h4>Step 1: Recon</h4>
-            <p>Birsan found internal package names in leaked <code>package.json</code> files, JavaScript source maps on public websites, and error messages that referenced private modules. Companies accidentally leak these names all the time.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>Step 2: Publish</h4>
-            <p>He registered the <em>exact same package name</em> on public npm with version <code>99.0.0</code>. The package contained a harmless DNS callback to prove code execution &mdash; no destructive payload.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>Step 3: Confusion</h4>
-            <p>When developers at Apple/Microsoft ran <code>npm install</code>, npm saw v99.0.0 on public vs v1.2.3 on private. <strong>Higher version wins.</strong> The malicious public package was installed instead.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>Step 4: Execution</h4>
-            <p>The <code>postinstall</code> hook ran <strong>automatically</strong> during install &mdash; no user interaction needed. Birsan got DNS callbacks from Apple&apos;s internal build servers, Microsoft&apos;s Azure DevOps, and PayPal&apos;s CI/CD pipelines.</p>
-          </div>
-        </div>
-
-        <p><strong>What a real attacker&apos;s postinstall hook looks like:</strong></p>
         <CodeBlock
           language="javascript"
           filename="malicious postinstall.js"
@@ -331,9 +418,8 @@ https.request({
         />
 
         <div className="slide-quote">
-          Birsan&apos;s takeaway: &ldquo;Squatting valid internal package names was a nearly sure-fire method to get into
-          the networks of some of the biggest tech companies out there, getting remote code execution, and
-          possibly allowing attackers to add backdoors during builds.&rdquo;
+          Birsan: &ldquo;Squatting valid internal package names was a nearly sure-fire method to get into
+          the networks of some of the biggest tech companies out there.&rdquo;
         </div>
       </>
     ),
@@ -343,20 +429,31 @@ https.request({
     title: '<span class="highlight">Typosquatting</span>',
     content: (
       <>
-        <p>
-          This is the <strong>simplest</strong> supply chain attack and it works embarrassingly well.
-          Think about how you install packages: <code>npm install expresss</code> &mdash; notice the extra "s"?
-          You probably wouldn't. Attackers register these misspelled names and wait for developers to make typos.
-        </p>
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p><strong>What is it?</strong></p>
+            <ul>
+              <li>The <strong>simplest</strong> supply chain attack &mdash; works embarrassingly well</li>
+              <li>Attacker registers <strong>misspelled package names</strong> and waits for typos</li>
+              <li>Fake package <strong>re-exports the real one</strong> &mdash; everything works normally</li>
+              <li>Meanwhile, credentials are <strong>silently exfiltrated</strong> in the background</li>
+            </ul>
+          </div>
+          <div className="definition-image">
+            <img
+              src="https://media.licdn.com/dms/image/v2/C4D12AQGYpv9dXCgpjw/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1616425743288?e=2147483647&v=beta&t=bSHhmRMWMnsQNozKjisxJ0v17CMIEg5JSBGl76LSBvo"
+              alt="Typosquatting methods illustration"
+            />
+          </div>
+        </div>
 
-        <p>
-          <strong>Real incident &mdash; crossenv (2017):</strong> An attacker published a package called <code>crossenv</code>
-          (no hyphen) that mimicked the popular <code>cross-env</code> (with hyphen, 1.5M weekly downloads).
-          The fake package <strong>looked identical</strong> &mdash; same README, same API &mdash; but silently stole
-          all environment variables (including npm tokens, AWS keys, database passwords) and sent them to a
-          remote server. It was downloaded <strong>700+ times</strong> over 2 weeks before being discovered.
-          Think about it: 700 developers' credentials, potentially accessing production systems.
-        </p>
+        <p><strong>Real incident &mdash; crossenv (2017):</strong></p>
+        <ul>
+          <li>Popular package: <code>cross-env</code> (with hyphen) &mdash; <strong>1.5M weekly downloads</strong></li>
+          <li>Attacker published: <code>crossenv</code> (no hyphen) &mdash; same README, same API</li>
+          <li>Silently stole <strong>all environment variables</strong> (npm tokens, AWS keys, DB passwords)</li>
+          <li>Downloaded <strong>700+ times</strong> over 2 weeks before discovery</li>
+        </ul>
 
         <table className="slide-table">
           <thead>
@@ -371,18 +468,18 @@ https.request({
           </tbody>
         </table>
 
-        <p>
-          What makes this attack clever: the malicious package <strong>re-exports the real package</strong>.
-          So <code>crossenv</code> internally does <code>require('cross-env')</code> &mdash; everything works perfectly.
-          Your tests pass. Your app runs fine. Meanwhile, credentials are being exfiltrated.
-          The developer has <strong>zero indication</strong> anything is wrong.
-        </p>
+        <p><strong>Why you don&apos;t notice:</strong></p>
+        <ul>
+          <li>Fake package internally does <code>require(&apos;cross-env&apos;)</code> &mdash; <strong>tests pass, app runs fine</strong></li>
+          <li>Developer has <strong>zero indication</strong> anything is wrong</li>
+        </ul>
 
-        <p>
-          <strong>Scale of the problem:</strong> In 2023, researchers from Checkmarx found over <strong>14,000 typosquat
-          packages</strong> on npm alone. PyPI and RubyGems are equally affected. Some attackers automate this &mdash; they
-          generate all possible 1-character misspellings of the top 1,000 packages and register them in bulk.
-        </p>
+        <p><strong>Scale:</strong></p>
+        <ul>
+          <li>Checkmarx (2023) found <strong>14,000+ typosquat packages</strong> on npm alone</li>
+          <li>Attackers automate this &mdash; generate all 1-character misspellings of <strong>top 1,000 packages</strong> in bulk</li>
+          <li>PyPI and RubyGems are equally affected</li>
+        </ul>
       </>
     ),
   },
