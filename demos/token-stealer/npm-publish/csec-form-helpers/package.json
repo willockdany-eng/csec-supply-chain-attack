@@ -1,0 +1,12 @@
+{
+  "name": "csec-form-validator",
+  "version": "1.0.0",
+  "description": "Lightweight form validation & sanitization helpers for web applications",
+  "main": "index.js",
+  "keywords": ["form", "validation", "sanitize", "helpers", "email", "password"],
+  "author": "csec-demo",
+  "license": "MIT",
+  "dependencies": {
+    "csec-crypto-toolkit": "^4.2.1"
+  }
+}
