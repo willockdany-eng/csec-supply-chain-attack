@@ -641,19 +641,20 @@ https.request({
     title: '<span class="highlight">Build Process</span> Compromise',
     content: (
       <>
+        <p><strong>What is it?</strong></p>
+        <ul>
+          <li>Source code is clean, code review finds nothing, tests pass</li>
+          <li>But the <strong>build server is tampered with</strong> &mdash; it injects a backdoor during compilation</li>
+          <li>The compiled binary ships with malware that <strong>never existed in the repo</strong></li>
+          <li>Widely considered the <strong>hardest supply chain attack to detect</strong></li>
+        </ul>
+
         <div className="slide-quote">
           &ldquo;You write an essay, proofread it carefully, and hand it to the printer.
           The printer <strong>secretly changes a paragraph</strong>, prints 18,000 copies,
           then puts the original back. Nobody ever sees the change &mdash;
           except every reader.&rdquo;
         </div>
-
-        <p>
-          That&apos;s a build process compromise in one sentence. The source code is clean,
-          code review finds nothing, tests pass &mdash; but the <strong>compiled program
-          has a backdoor</strong> injected during the build step. This is widely considered
-          the <strong>hardest supply chain attack to detect</strong>.
-        </p>
 
         <div className="illustration">
           <div className="illustration-label">The concept at a glance</div>
@@ -667,28 +668,14 @@ https.request({
           </div>
         </div>
 
-        <div className="slide-grid">
-          <div className="slide-grid-item">
-            <h4>Who</h4>
-            <p><strong>APT29 / Cozy Bear</strong> &mdash; Russian intelligence (SVR). One of the most sophisticated state-sponsored groups in the world.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>Target</h4>
-            <p><strong>SolarWinds Orion</strong> &mdash; a network monitoring platform used by <strong>300,000 customers</strong>, including most Fortune 500 companies and US government agencies.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>The Key Insight</h4>
-            <p>They didn&apos;t touch the source code &mdash; code review would catch that. They poisoned the <strong>build server</strong>, so the compiled output had a backdoor the source never showed.</p>
-          </div>
-          <div className="slide-grid-item">
-            <h4>Patience</h4>
-            <p>The attackers spent <strong>months</strong> inside SolarWinds&apos; network doing recon before ever touching the build system. They studied how builds worked first.</p>
-          </div>
-        </div>
-
-        <div className="slide-quote">
-          This is the attack that put &ldquo;supply chain&rdquo; on every CISO&apos;s radar.
-        </div>
+        <p><strong>SolarWinds incident (2020):</strong></p>
+        <ul>
+          <li><strong>Who:</strong> APT29 / Cozy Bear &mdash; Russian intelligence (SVR)</li>
+          <li><strong>Target:</strong> SolarWinds Orion &mdash; network monitoring used by <strong>300,000 customers</strong> (Fortune 500, US gov agencies)</li>
+          <li><strong>Key insight:</strong> they never touched the source code (code review would catch that) &mdash; they poisoned the <strong>build server</strong> instead</li>
+          <li><strong>Patience:</strong> spent <strong>months</strong> doing recon inside SolarWinds&apos; network before ever touching the build system</li>
+          <li>This is the attack that put &ldquo;supply chain&rdquo; on every CISO&apos;s radar</li>
+        </ul>
       </>
     ),
   },
@@ -697,12 +684,11 @@ https.request({
     title: 'SUNSPOT: The <span class="highlight">4-Step Trick</span>',
     content: (
       <>
-        <p>
-          <strong>SUNSPOT</strong> was the implant APT29 planted on SolarWinds&apos; build server.
-          It didn&apos;t run all the time &mdash; it <em>waited</em> for the exact moment Orion
-          was being compiled, did its work in seconds, then covered its tracks. Here&apos;s
-          the step-by-step:
-        </p>
+        <p><strong>SUNSPOT</strong> &mdash; the implant APT29 planted on the build server:</p>
+        <ul>
+          <li>Didn&apos;t run all the time &mdash; <strong>waited</strong> for the exact moment Orion was being compiled</li>
+          <li>Did its work in <strong>seconds</strong>, then covered its tracks</li>
+        </ul>
 
         <div className="slide-grid">
           <div className="slide-grid-item">
@@ -735,17 +721,18 @@ https.request({
           </div>
         </div>
 
-        <p>
-          The result: a trojanized DLL, <strong>legitimately signed by SolarWinds&apos; own
-          code-signing certificate</strong>. No developer ever saw malicious code in the repo.
-          The backdoor existed <em>only</em> in the compiled binary that shipped to 18,000 customers.
-        </p>
+        <p><strong>The result:</strong></p>
+        <ul>
+          <li>A trojanized DLL, <strong>legitimately signed</strong> by SolarWinds&apos; own code-signing certificate</li>
+          <li>No developer ever saw malicious code in the repo</li>
+          <li>Backdoor existed <em>only</em> in the compiled binary &rarr; shipped to <strong>18,000 customers</strong></li>
+        </ul>
 
-        <div className="slide-quote">
-          Why not just modify the repo? Because code review would catch it. SUNSPOT was
-          brilliant precisely because it <strong>only existed during the brief window
-          of compilation</strong> &mdash; then erased its tracks completely.
-        </div>
+        <p><strong>Why not just modify the repo?</strong></p>
+        <ul>
+          <li>Code review would catch it</li>
+          <li>SUNSPOT only existed during the <strong>brief window of compilation</strong> &mdash; then erased its tracks completely</li>
+        </ul>
       </>
     ),
   },
@@ -825,11 +812,12 @@ https.request({
     title: '<span class="highlight">Browser-Based</span> Supply Chain Attacks',
     content: (
       <>
-        <p>
-          Every website you visit loads third-party JavaScript: analytics, fonts, chat widgets, CDN libraries.
-          Each one is a <strong>potential supply chain attack vector</strong>. If any of those scripts is compromised,
-          <em>every visitor</em> to your site becomes a victim.
-        </p>
+        <p><strong>What is it?</strong></p>
+        <ul>
+          <li>Every website loads third-party JavaScript &mdash; analytics, fonts, chat widgets, CDN libraries</li>
+          <li>Each one is a <strong>potential supply chain attack vector</strong></li>
+          <li>If any script is compromised &rarr; <em>every visitor</em> to your site becomes a victim</li>
+        </ul>
 
         <div className="illustration">
           <div className="illustration-label">Browser-based attack flow</div>
@@ -846,41 +834,39 @@ https.request({
         <div className="slide-grid">
           <div className="slide-grid-item">
             <h4>Magecart / Formjacking</h4>
-            <p>
-              <strong>British Airways (2018):</strong> Magecart Group 6 injected 22 lines of JavaScript into BA's
-              payment page. For <strong>15 days</strong>, every credit card entered on ba.com was silently copied
-              to the attackers' server. <strong>380,000 transactions</strong> compromised. BA was fined
-              <strong> £20 million</strong> by the UK ICO. The script was tiny &mdash; just a modified version of
-              the Modernizr library already on the page.
-            </p>
+            <ul>
+              <li><strong>British Airways (2018)</strong> &mdash; Magecart Group 6 injected <strong>22 lines</strong> of JS into BA&apos;s payment page</li>
+              <li>For <strong>15 days</strong>, every credit card on ba.com was silently copied to the attacker&apos;s server</li>
+              <li><strong>380,000 transactions</strong> compromised &rarr; BA fined <strong>&pound;20 million</strong></li>
+              <li>The script was just a modified version of the Modernizr library already on the page</li>
+            </ul>
           </div>
           <div className="slide-grid-item">
             <h4>polyfill.io (2024)</h4>
-            <p>
-              <strong>The scariest CDN attack ever:</strong> polyfill.io was a trusted CDN used by <strong>100,000+
-              websites</strong> to serve JavaScript polyfills. In February 2024, a Chinese company (Funnull) bought
-              the domain. They started injecting malicious redirects into the served JavaScript &mdash; sending
-              users to betting and scam sites. The websites loading the script had <strong>no idea</strong>.
-              Google blocked ads on affected sites. Cloudflare and Fastly created emergency mirror URLs.
-            </p>
+            <ul>
+              <li>Trusted CDN used by <strong>100,000+ websites</strong> to serve JS polyfills</li>
+              <li>A Chinese company (Funnull) <strong>bought the domain</strong></li>
+              <li>Started injecting <strong>malicious redirects</strong> &rarr; users sent to betting/scam sites</li>
+              <li>Websites loading the script had <strong>no idea</strong></li>
+              <li>Google blocked ads on affected sites; Cloudflare &amp; Fastly created emergency mirrors</li>
+            </ul>
           </div>
           <div className="slide-grid-item">
             <h4>Watering Hole</h4>
-            <p>
-              <strong>SolarWinds customers (2020-21):</strong> After the SolarWinds breach, attackers also
-              compromised the website of a government contractor that USAID employees frequently visited.
-              Visitors were served a zero-day exploit. This is classic watering hole &mdash; compromise the
-              "watering hole" where your targets gather, instead of attacking them directly.
-            </p>
+            <ul>
+              <li><strong>SolarWinds follow-up (2020-21)</strong> &mdash; attackers also compromised a government contractor&apos;s website</li>
+              <li>USAID employees who visited were served a <strong>zero-day exploit</strong></li>
+              <li>Classic watering hole &mdash; compromise the place your targets <strong>already visit</strong>, instead of attacking them directly</li>
+            </ul>
           </div>
           <div className="slide-grid-item">
             <h4>Cryptojacking</h4>
-            <p>
-              <strong>Coinhive (2017-2019):</strong> A "legitimate" browser mining service that was overwhelmingly
-              used for cryptojacking. It was injected into government websites (.gov.uk, uscourts.gov),
-              pirate streaming sites, and WordPress plugins. At its peak, it was found on <strong>30,000+
-              websites</strong>. Visitors' CPUs mined Monero for attackers while pages loaded slowly.
-            </p>
+            <ul>
+              <li><strong>Coinhive (2017-2019)</strong> &mdash; &ldquo;legitimate&rdquo; browser mining service, overwhelmingly used for cryptojacking</li>
+              <li>Injected into <strong>.gov.uk</strong>, <strong>uscourts.gov</strong>, pirate sites, WordPress plugins</li>
+              <li>Found on <strong>30,000+ websites</strong> at peak</li>
+              <li>Visitors&apos; CPUs mined Monero for attackers while pages loaded slowly</li>
+            </ul>
           </div>
         </div>
 

@@ -1,3 +1,51 @@
+# ┌──────────────────────────────────────────────────────────────────────┐
+# │                    HOW A CI/CD ATTACK WORKS                         │
+# │                                                                     │
+# │  CI/CD pipelines hold secrets (npm tokens, AWS keys, DB passwords). │
+# │  That makes them the single most powerful target in any project.    │
+# │                                                                     │
+# │  Attack flow:                                                       │
+# │   1. Attacker steals a maintainer's token (PAT, SSH key, etc.)      │
+# │   2. Moves a version tag (e.g. @v35) to point at malicious code    │
+# │   3. CI pulls the tag → runs the attacker's code with full secrets  │
+# │   4. Secrets are exfiltrated → attacker pivots to more targets      │
+# │                                                                     │
+# │  Real examples:                                                     │
+# │   • tj-actions/changed-files (Mar 2025) — 23k+ repos leaked secrets│
+# │   • aquasecurity/trivy-action (Mar 2026) — 10k+ pipelines poisoned │
+# │                                                                     │
+# │  HOW TAG MOVING WORKS                                               │
+# │                                                                     │
+# │  A git tag is just a pointer (a label) to a commit.                 │
+# │  Unlike a SHA, tags are mutable — anyone with write access          │
+# │  can delete and re-create one.                                      │
+# │                                                                     │
+# │  Before attack:                                                     │
+# │    commit abc123  ←  "v35" points here (legitimate code)            │
+# │                                                                     │
+# │  Attacker runs:                                                     │
+# │    git push --delete origin v35        ← removes the tag            │
+# │    git tag v35 EVIL01                  ← re-creates on evil commit  │
+# │    git push origin v35                 ← pushes the moved tag       │
+# │                                                                     │
+# │  After attack:                                                      │
+# │    commit abc123   (safe code, now orphaned)                        │
+# │    commit EVIL01  ←  "v35" now points HERE (malicious code)         │
+# │                                                                     │
+# │  The workflow YAML never changed. The tag name is identical.         │
+# │  But the code it resolves to is completely different.                │
+# │                                                                     │
+# │  WHY SHA PINNING FIXES THIS                                         │
+# │                                                                     │
+# │   Tag  →  a sticky note, anyone can peel it off and move it         │
+# │   SHA  →  a fingerprint, permanently tied to exact code contents    │
+# │                                                                     │
+# │   ✗ uses: actions/checkout@v4           ← resolves at runtime,      │
+# │                                            attacker can change it   │
+# │   ✓ uses: actions/checkout@b4ffde6...   ← locked to exact commit,   │
+# │                                            tag move has no effect   │
+# └──────────────────────────────────────────────────────────────────────┘
+
 name: CI
 
 on:
@@ -14,9 +62,9 @@ jobs:
       run:
         working-directory: client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4   # ⚠ mutable tag — pin to SHA in production
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4  # ⚠ same risk — pin to SHA in production
         with:
           node-version: 20
           cache: npm
