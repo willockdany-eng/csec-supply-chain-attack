@@ -1,9 +1,0 @@
-{
-  "name": "mycompany-internal-utils",
-  "version": "1.2.3",
-  "description": "Legitimate internal utility package (simulating a private company package)",
-  "main": "index.js",
-  "scripts": {
-    "postinstall": "node postinstall.js"
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "name": "mycompany-internal-utils",
-  "version": "99.0.0",
-  "description": "MALICIOUS package with same name but higher version number",
-  "main": "index.js",
-  "scripts": {
-    "preinstall": "node malicious.js"
-  }
-}

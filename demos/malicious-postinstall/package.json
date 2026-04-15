@@ -1,9 +1,0 @@
-{
-  "name": "totally-legit-package",
-  "version": "1.0.0",
-  "description": "Demonstrates how npm postinstall hooks can execute arbitrary code",
-  "main": "index.js",
-  "scripts": {
-    "postinstall": "node malicious.js"
-  }
-}
