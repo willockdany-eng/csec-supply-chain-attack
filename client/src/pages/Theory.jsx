@@ -488,61 +488,102 @@ https.request({
     title: '<span class="highlight">Compromised Packages</span> & Malicious Updates',
     content: (
       <>
-        <p>
-          This is <strong>the most dangerous</strong> supply chain attack vector because it weaponizes <em>legitimate trust</em>.
-          The attacker doesn't create a new package &mdash; they <strong>take over an existing, popular one</strong>
-          that thousands of projects already depend on.
-        </p>
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p><strong>What is it?</strong></p>
+            <ul>
+              <li>The <strong>most dangerous</strong> supply chain vector &mdash; weaponizes <em>legitimate trust</em></li>
+              <li>Attacker <strong>takes over an existing, popular package</strong> (not a new/fake one)</li>
+              <li>Thousands of projects <strong>already depend on it</strong> &mdash; instant reach</li>
+              <li>Malicious update arrives through <strong>official, signed channels</strong></li>
+            </ul>
+          </div>
+          <div className="definition-image">
+            <img
+              src="https://www.csoonline.com/wp-content/uploads/2025/07/4026380-0-32873100-1753185152-shutterstock_680078968.jpg?quality=50&strip=all&w=1024"
+              alt="Compromised package supply chain attack"
+            />
+          </div>
+        </div>
 
-        <p>
-          <strong>The event-stream story (2018):</strong> Dominic Tarr maintained <code>event-stream</code>, a package
-          with <strong>2 million weekly downloads</strong>. He was burned out &mdash; unpaid, overwhelmed, maintaining
-          open source for free. A user named "right9ctrl" offered to help maintain it. Tarr thought:
-          &ldquo;Great, someone who cares.&rdquo; He handed over publishing rights.
-        </p>
-        <p>
-          right9ctrl then added a dependency called <code>flatmap-stream</code> that contained <strong>AES-encrypted
-          malicious code</strong> hidden inside a test fixture file. The decryption key? It was derived from
-          the <code>description</code> field in the <strong>Copay Bitcoin wallet's</strong> <code>package.json</code>.
-          This meant the code <em>only activated inside the Copay wallet app</em>. Everywhere else it was dormant.
-          When triggered, it intercepted Bitcoin private keys during transaction signing and sent them to the attacker.
-        </p>
+        <p><strong>The event-stream story (2018):</strong></p>
+        <ul>
+          <li><code>event-stream</code> had <strong>2M weekly downloads</strong>, maintained by Dominic Tarr (burned out, unpaid)</li>
+          <li>A user "right9ctrl" offered to help &rarr; Tarr <strong>handed over publishing rights</strong></li>
+          <li>right9ctrl added <code>flatmap-stream</code> &mdash; contained <strong>AES-encrypted malicious code</strong> in a test file</li>
+          <li>Decryption key derived from <strong>Copay Bitcoin wallet&apos;s</strong> <code>package.json</code> description field</li>
+          <li>Payload <strong>only activated inside Copay</strong> &mdash; everywhere else it was dormant</li>
+          <li>When triggered: intercepted <strong>Bitcoin private keys</strong> during transaction signing</li>
+        </ul>
 
         <div className="slide-quote">
-          Dominic Tarr's response on GitHub: &ldquo;I don't get any reward for maintaining this module. I don't even
-          use it anymore. He mass-emailed me and offered to maintain the module, so I gave it to him.
+          Dominic Tarr: &ldquo;I don't get any reward for maintaining this module. I don't even
+          use it anymore. He emailed me and offered to maintain it, so I gave it to him.
           He seemed enthusiastic.&rdquo;
         </div>
 
         <p><strong>Why this pattern is terrifying:</strong></p>
         <ul>
-          <li><strong>Legitimate history:</strong> The package had years of real commits, thousands of stars, and a real community. Your audit tools see a "trusted" package.</li>
-          <li><strong>Signed & checksummed:</strong> The malicious version was published through npm's official channel. It had a valid checksum. Nothing was "tampered with" &mdash; it was a legitimate publish by an authorized maintainer.</li>
-          <li><strong>Auto-updated:</strong> If you use Dependabot or Renovate, the malicious update could be auto-merged without human review.</li>
-          <li><strong>Targeted payload:</strong> The code only activated in one specific environment (Copay). If you weren't Copay, your tests passed, your app worked, you had no clue.</li>
-          <li><strong>Discovered by accident:</strong> A developer noticed the suspicious dependency while reviewing updates. If they hadn't been curious, it could have lasted months longer.</li>
+          <li><strong>Legitimate history</strong> &mdash; years of real commits, thousands of stars &rarr; audit tools see a "trusted" package</li>
+          <li><strong>Signed &amp; checksummed</strong> &mdash; published through npm&apos;s official channel by an authorized maintainer</li>
+          <li><strong>Auto-updated</strong> &mdash; Dependabot / Renovate could auto-merge the malicious update without human review</li>
+          <li><strong>Targeted payload</strong> &mdash; only activated in Copay; everyone else&apos;s tests passed normally</li>
+          <li><strong>Discovered by accident</strong> &mdash; a curious developer spotted the suspicious dependency during review</li>
         </ul>
 
-        <p>
-          <strong>This keeps happening:</strong> In 2022, the maintainer of <code>colors.js</code> and <code>faker.js</code>
-          (Marak Squires) deliberately sabotaged his own packages, adding an infinite loop that printed garbage.
-          <strong>19,000+ projects</strong> broke overnight. Different motive (protest, not theft), same lesson:
-          the open source maintainers you depend on are often one person, unpaid, and one bad day away from causing chaos.
-        </p>
+        <p><strong>It keeps happening:</strong></p>
+        <ul>
+          <li><strong>colors.js / faker.js (2022)</strong> &mdash; maintainer Marak Squires deliberately sabotaged his own packages</li>
+          <li>Added an <strong>infinite loop</strong> that printed garbage &rarr; <strong>19,000+ projects</strong> broke overnight</li>
+          <li>Different motive (protest vs. theft), <strong>same lesson:</strong> maintainers are often one person, unpaid, one bad day from chaos</li>
+        </ul>
       </>
     ),
   },
   {
     tag: 'Part 1 // Attack Type D',
-    title: '<span class="highlight">CI/CD Pipeline</span> Attacks',
+    title: '<span class="highlight">CI/CD Pipeline</span> attacks',
     content: (
       <>
+        <div className="definition-with-image">
+          <div className="definition-text">
+            <p><strong>What is it?</strong></p>
+            <ul>
+              <li>CI/CD (GitHub Actions, Jenkins) is <strong>the robot that builds &amp; deploys your app</strong></li>
+              <li>It holds <strong>all the keys</strong>: npm tokens, AWS credentials, DB passwords</li>
+              <li>Makes it the <strong>single most powerful target</strong> in your project</li>
+              <li>If attackers trick the robot into running <em>their</em> code &rarr; they get <strong>every secret</strong></li>
+            </ul>
+          </div>
+          <div className="definition-image">
+            <img
+              src="/cicd-loop.png"
+              alt="CI/CD infinity loop diagram"
+            />
+          </div>
+        </div>
+
+        <p><strong>The CI/CD loop &mdash; stage by stage:</strong></p>
+        <ul>
+          <li><strong>CI (Continuous Integration)</strong> &mdash; the left loop:
+            <ul>
+              <li><strong>Code</strong> &rarr; developer pushes to GitHub</li>
+              <li><strong>Build</strong> &rarr; app is compiled/bundled automatically (<code>npm run build</code>)</li>
+              <li><strong>Test</strong> &rarr; automated tests run to catch bugs before they ship</li>
+            </ul>
+          </li>
+          <li><strong>CD (Continuous Deployment)</strong> &mdash; the right loop:
+            <ul>
+              <li><strong>Release</strong> &rarr; a tested artifact is tagged for production</li>
+              <li><strong>Deploy</strong> &rarr; pushed to the server (Vercel, AWS, Render&hellip;)</li>
+              <li><strong>Operate</strong> &rarr; app serves real users</li>
+              <li><strong>Monitor</strong> &rarr; logs &amp; alerts track health; findings feed back into <strong>Plan</strong></li>
+            </ul>
+          </li>
+        </ul>
         <p>
-          Think of CI/CD (GitHub Actions, Jenkins, etc.) as <strong>the robot that builds and deploys
-          your app</strong>. To do its job, it needs <em>all the keys</em>: your npm token, AWS
-          credentials, database passwords. That makes it the <strong>single most powerful thing</strong> in
-          your project. If an attacker tricks the robot into running <em>their</em> code, they get every
-          secret it has access to.
+          Example: you push a fix to <code>Theory.jsx</code> &rarr; CI installs deps, lints, tests, builds &rarr;
+          if everything passes, CD deploys it automatically. <strong>One push, zero manual steps.</strong>
         </p>
 
         <div className="illustration">
@@ -557,23 +598,23 @@ https.request({
           </div>
         </div>
 
-        <p>
-          <strong>Real incident — tj-actions (March 2025):</strong> A popular GitHub Action called
-          <code>tj-actions/changed-files</code> was used by <strong>23,000+ projects</strong>.
-          Attackers stole the maintainer's password-like token (PAT), then <em>moved</em> the
-          version tag <code>@v35</code> to point at malicious code. Every project that
-          used <code>@v35</code> now unknowingly ran the attacker's code in their CI &mdash; and it
-          printed out every secret. The attacker then used <em>those</em> stolen secrets to compromise
-          even more Actions. One breach turned into many.
-        </p>
+        <p><strong>Real incident -- tj-actions (March 2025):</strong></p>
+        <ul>
+          <li><code>tj-actions/changed-files</code> used by <strong>23,000+ projects</strong></li>
+          <li>Attackers <strong>stole the maintainer&apos;s PAT</strong> (Personal Access Token)</li>
+          <li>Moved version tag <code>@v35</code> to point at <strong>malicious code</strong></li>
+          <li>Every project using <code>@v35</code> unknowingly <strong>ran the attacker&apos;s code</strong> in CI</li>
+          <li>It <strong>printed out every secret</strong> &rarr; attacker used those to compromise more Actions</li>
+          <li>One breach <strong>cascaded into many</strong></li>
+        </ul>
 
-        <p>
-          <strong>It happened again — Trivy (March 2026):</strong> Using secrets stolen from tj-actions,
-          attackers poisoned <code>aquasecurity/trivy-action</code> &mdash; a <strong>security
-          scanner</strong> (the irony: the tool meant to <em>find</em> vulnerabilities became one).
-          <strong>10,000+</strong> CI pipelines leaked credentials. Those stolen npm tokens were then used
-          to publish malware that used blockchain for its command server, making it nearly impossible to shut down.
-        </p>
+        <p><strong>It happened again -- Trivy (March 2026):</strong></p>
+        <ul>
+          <li>Using secrets stolen from tj-actions, attackers poisoned <code>aquasecurity/trivy-action</code></li>
+          <li>A <strong>security scanner</strong> turned into a weapon (the tool meant to <em>find</em> vulns became one)</li>
+          <li><strong>10,000+</strong> CI pipelines leaked credentials</li>
+          <li>Stolen npm tokens used to publish <strong>malware with blockchain C2</strong> &mdash; nearly impossible to shut down</li>
+        </ul>
 
         <CodeBlock
           language="yaml"
@@ -585,13 +626,13 @@ https.request({
 - uses: tj-actions/changed-files@abc123def456`}
         />
 
-        <p>
-          <strong>The one-line fix:</strong> Pin Actions to a <strong>SHA hash</strong> instead of a
-          version tag. A tag like <code>@v4</code> is just a sticky note &mdash; anyone with access can
-          peel it off and stick it on different code. A SHA like <code>@abc123...</code> is a
-          fingerprint &mdash; it always points to the exact same code, forever. If everyone had done this,
-          both attacks would have failed.
-        </p>
+        <p><strong>The one-line fix:</strong></p>
+        <ul>
+          <li>Pin Actions to a <strong>SHA hash</strong> instead of a version tag</li>
+          <li>A tag like <code>@v4</code> is a sticky note &mdash; anyone with access can move it</li>
+          <li>A SHA like <code>@abc123...</code> is a fingerprint &mdash; <strong>always points to the same code, forever</strong></li>
+          <li>If everyone had done this, <strong>both attacks would have failed</strong></li>
+        </ul>
       </>
     ),
   },
